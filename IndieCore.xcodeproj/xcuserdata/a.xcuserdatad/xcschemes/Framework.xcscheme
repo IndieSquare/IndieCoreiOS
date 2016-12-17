@@ -14,9 +14,9 @@
             buildForAnalyzing = "YES">
             <BuildableReference
                BuildableIdentifier = "primary"
-               BlueprintIdentifier = "0043F7431DBF019200C9A6C0"
-               BuildableName = "libIndieCore.a"
-               BlueprintName = "IndieCore"
+               BlueprintIdentifier = "0043F7AF1DBF14F500C9A6C0"
+               BuildableName = "Framework"
+               BlueprintName = "Framework"
                ReferencedContainer = "container:IndieCore.xcodeproj">
             </BuildableReference>
          </BuildActionEntry>
@@ -45,9 +45,9 @@
       <MacroExpansion>
          <BuildableReference
             BuildableIdentifier = "primary"
-            BlueprintIdentifier = "0043F7431DBF019200C9A6C0"
-            BuildableName = "libIndieCore.a"
-            BlueprintName = "IndieCore"
+            BlueprintIdentifier = "0043F7AF1DBF14F500C9A6C0"
+            BuildableName = "Framework"
+            BlueprintName = "Framework"
             ReferencedContainer = "container:IndieCore.xcodeproj">
          </BuildableReference>
       </MacroExpansion>
@@ -63,9 +63,9 @@
       <MacroExpansion>
          <BuildableReference
             BuildableIdentifier = "primary"
-            BlueprintIdentifier = "0043F7431DBF019200C9A6C0"
-            BuildableName = "libIndieCore.a"
-            BlueprintName = "IndieCore"
+            BlueprintIdentifier = "0043F7AF1DBF14F500C9A6C0"
+            BuildableName = "Framework"
+            BlueprintName = "Framework"
             ReferencedContainer = "container:IndieCore.xcodeproj">
          </BuildableReference>
       </MacroExpansion>

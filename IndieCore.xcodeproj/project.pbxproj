@@ -6,10 +6,48 @@
 	objectVersion = 46;
 	objects = {
 
+/* Begin PBXAggregateTarget section */
+		0043F7AF1DBF14F500C9A6C0 /* Framework */ = {
+			isa = PBXAggregateTarget;
+			buildConfigurationList = 0043F7B01DBF14F500C9A6C0 /* Build configuration list for PBXAggregateTarget "Framework" */;
+			buildPhases = (
+				0043F7B51DBF151D00C9A6C0 /* MultiPlatform Build */,
+			);
+			dependencies = (
+				0043F8051DBF273700C9A6C0 /* PBXTargetDependency */,
+				0043F7B41DBF150D00C9A6C0 /* PBXTargetDependency */,
+			);
+			name = Framework;
+			productName = Framework;
+		};
+/* End PBXAggregateTarget section */
+
 /* Begin PBXBuildFile section */
-		0043F7491DBF019200C9A6C0 /* IndieCore.m in Sources */ = {isa = PBXBuildFile; fileRef = 0043F7481DBF019200C9A6C0 /* IndieCore.m */; };
 		0043F74A1DBF019200C9A6C0 /* IndieCore.h in CopyFiles */ = {isa = PBXBuildFile; fileRef = 0043F7471DBF019200C9A6C0 /* IndieCore.h */; };
+		0043F7521DBF01E000C9A6C0 /* UIKit.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 0043F7511DBF01E000C9A6C0 /* UIKit.framework */; };
+		0043F7551DBF037200C9A6C0 /* IndieCore.h in Headers */ = {isa = PBXBuildFile; fileRef = 0043F7471DBF019200C9A6C0 /* IndieCore.h */; settings = {ATTRIBUTES = (Public, ); }; };
+		0043F75B1DBF097200C9A6C0 /* IndieCore.m in Sources */ = {isa = PBXBuildFile; fileRef = 0043F7591DBF097200C9A6C0 /* IndieCore.m */; };
+		0096956F1DBFCCB300585608 /* bitcore.js in Resources */ = {isa = PBXBuildFile; fileRef = 0096956B1DBFCCB300585608 /* bitcore.js */; };
+		009695701DBFCCB300585608 /* functions.html in Resources */ = {isa = PBXBuildFile; fileRef = 0096956C1DBFCCB300585608 /* functions.html */; };
+		009695711DBFCCB300585608 /* mnemonic.js in Resources */ = {isa = PBXBuildFile; fileRef = 0096956D1DBFCCB300585608 /* mnemonic.js */; };
 /* End PBXBuildFile section */
+
+/* Begin PBXContainerItemProxy section */
+		0043F7B31DBF150D00C9A6C0 /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = 0043F73C1DBF019200C9A6C0 /* Project object */;
+			proxyType = 1;
+			remoteGlobalIDString = 0043F7431DBF019200C9A6C0;
+			remoteInfo = IndieCore;
+		};
+		0043F8041DBF273700C9A6C0 /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = 0043F73C1DBF019200C9A6C0 /* Project object */;
+			proxyType = 1;
+			remoteGlobalIDString = 0043F7FD1DBF26BC00C9A6C0;
+			remoteInfo = IndieCoreResources;
+		};
+/* End PBXContainerItemProxy section */
 
 /* Begin PBXCopyFilesBuildPhase section */
 		0043F7421DBF019200C9A6C0 /* CopyFiles */ = {
@@ -27,11 +65,25 @@
 /* Begin PBXFileReference section */
 		0043F7441DBF019200C9A6C0 /* libIndieCore.a */ = {isa = PBXFileReference; explicitFileType = archive.ar; includeInIndex = 0; path = libIndieCore.a; sourceTree = BUILT_PRODUCTS_DIR; };
 		0043F7471DBF019200C9A6C0 /* IndieCore.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = IndieCore.h; sourceTree = "<group>"; };
-		0043F7481DBF019200C9A6C0 /* IndieCore.m */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.objc; path = IndieCore.m; sourceTree = "<group>"; };
+		0043F7511DBF01E000C9A6C0 /* UIKit.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = UIKit.framework; path = System/Library/Frameworks/UIKit.framework; sourceTree = SDKROOT; };
+		0043F7591DBF097200C9A6C0 /* IndieCore.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = IndieCore.m; sourceTree = "<group>"; };
+		0043F7FE1DBF26BC00C9A6C0 /* IndieCore.bundle */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = IndieCore.bundle; sourceTree = BUILT_PRODUCTS_DIR; };
+		0043F8001DBF26BC00C9A6C0 /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = Info.plist; sourceTree = "<group>"; };
+		0096956B1DBFCCB300585608 /* bitcore.js */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.javascript; path = bitcore.js; sourceTree = "<group>"; };
+		0096956C1DBFCCB300585608 /* functions.html */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text.html; path = functions.html; sourceTree = "<group>"; };
+		0096956D1DBFCCB300585608 /* mnemonic.js */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.javascript; path = mnemonic.js; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
 		0043F7411DBF019200C9A6C0 /* Frameworks */ = {
+			isa = PBXFrameworksBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				0043F7521DBF01E000C9A6C0 /* UIKit.framework in Frameworks */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		0043F7FB1DBF26BC00C9A6C0 /* Frameworks */ = {
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
@@ -45,7 +97,9 @@
 			isa = PBXGroup;
 			children = (
 				0043F7461DBF019200C9A6C0 /* IndieCore */,
+				0043F7FF1DBF26BC00C9A6C0 /* IndieCoreResources */,
 				0043F7451DBF019200C9A6C0 /* Products */,
+				0043F7501DBF01E000C9A6C0 /* Frameworks */,
 			);
 			sourceTree = "<group>";
 		};
@@ -53,6 +107,7 @@
 			isa = PBXGroup;
 			children = (
 				0043F7441DBF019200C9A6C0 /* libIndieCore.a */,
+				0043F7FE1DBF26BC00C9A6C0 /* IndieCore.bundle */,
 			);
 			name = Products;
 			sourceTree = "<group>";
@@ -60,13 +115,51 @@
 		0043F7461DBF019200C9A6C0 /* IndieCore */ = {
 			isa = PBXGroup;
 			children = (
+				0043F8421DBF2EBF00C9A6C0 /* Resources */,
 				0043F7471DBF019200C9A6C0 /* IndieCore.h */,
-				0043F7481DBF019200C9A6C0 /* IndieCore.m */,
+				0043F7591DBF097200C9A6C0 /* IndieCore.m */,
 			);
 			path = IndieCore;
 			sourceTree = "<group>";
 		};
+		0043F7501DBF01E000C9A6C0 /* Frameworks */ = {
+			isa = PBXGroup;
+			children = (
+				0043F7511DBF01E000C9A6C0 /* UIKit.framework */,
+			);
+			name = Frameworks;
+			sourceTree = "<group>";
+		};
+		0043F7FF1DBF26BC00C9A6C0 /* IndieCoreResources */ = {
+			isa = PBXGroup;
+			children = (
+				0043F8001DBF26BC00C9A6C0 /* Info.plist */,
+			);
+			path = IndieCoreResources;
+			sourceTree = "<group>";
+		};
+		0043F8421DBF2EBF00C9A6C0 /* Resources */ = {
+			isa = PBXGroup;
+			children = (
+				0096956B1DBFCCB300585608 /* bitcore.js */,
+				0096956C1DBFCCB300585608 /* functions.html */,
+				0096956D1DBFCCB300585608 /* mnemonic.js */,
+			);
+			name = Resources;
+			sourceTree = "<group>";
+		};
 /* End PBXGroup section */
+
+/* Begin PBXHeadersBuildPhase section */
+		0043F7541DBF035E00C9A6C0 /* Headers */ = {
+			isa = PBXHeadersBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				0043F7551DBF037200C9A6C0 /* IndieCore.h in Headers */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXHeadersBuildPhase section */
 
 /* Begin PBXNativeTarget section */
 		0043F7431DBF019200C9A6C0 /* IndieCore */ = {
@@ -76,6 +169,8 @@
 				0043F7401DBF019200C9A6C0 /* Sources */,
 				0043F7411DBF019200C9A6C0 /* Frameworks */,
 				0043F7421DBF019200C9A6C0 /* CopyFiles */,
+				0043F7541DBF035E00C9A6C0 /* Headers */,
+				0043F7A31DBF113500C9A6C0 /* Build Framework */,
 			);
 			buildRules = (
 			);
@@ -85,6 +180,23 @@
 			productName = IndieCore;
 			productReference = 0043F7441DBF019200C9A6C0 /* libIndieCore.a */;
 			productType = "com.apple.product-type.library.static";
+		};
+		0043F7FD1DBF26BC00C9A6C0 /* IndieCoreResources */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = 0043F8011DBF26BC00C9A6C0 /* Build configuration list for PBXNativeTarget "IndieCoreResources" */;
+			buildPhases = (
+				0043F7FA1DBF26BC00C9A6C0 /* Sources */,
+				0043F7FB1DBF26BC00C9A6C0 /* Frameworks */,
+				0043F7FC1DBF26BC00C9A6C0 /* Resources */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+			);
+			name = IndieCoreResources;
+			productName = IndieCoreResources;
+			productReference = 0043F7FE1DBF26BC00C9A6C0 /* IndieCore.bundle */;
+			productType = "com.apple.product-type.bundle";
 		};
 /* End PBXNativeTarget section */
 
@@ -96,6 +208,14 @@
 				ORGANIZATIONNAME = IndieSquare;
 				TargetAttributes = {
 					0043F7431DBF019200C9A6C0 = {
+						CreatedOnToolsVersion = 8.0;
+						ProvisioningStyle = Automatic;
+					};
+					0043F7AF1DBF14F500C9A6C0 = {
+						CreatedOnToolsVersion = 8.0;
+						ProvisioningStyle = Automatic;
+					};
+					0043F7FD1DBF26BC00C9A6C0 = {
 						CreatedOnToolsVersion = 8.0;
 						ProvisioningStyle = Automatic;
 					};
@@ -114,20 +234,86 @@
 			projectRoot = "";
 			targets = (
 				0043F7431DBF019200C9A6C0 /* IndieCore */,
+				0043F7AF1DBF14F500C9A6C0 /* Framework */,
+				0043F7FD1DBF26BC00C9A6C0 /* IndieCoreResources */,
 			);
 		};
 /* End PBXProject section */
+
+/* Begin PBXResourcesBuildPhase section */
+		0043F7FC1DBF26BC00C9A6C0 /* Resources */ = {
+			isa = PBXResourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				009695711DBFCCB300585608 /* mnemonic.js in Resources */,
+				009695701DBFCCB300585608 /* functions.html in Resources */,
+				0096956F1DBFCCB300585608 /* bitcore.js in Resources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXResourcesBuildPhase section */
+
+/* Begin PBXShellScriptBuildPhase section */
+		0043F7A31DBF113500C9A6C0 /* Build Framework */ = {
+			isa = PBXShellScriptBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			inputPaths = (
+			);
+			name = "Build Framework";
+			outputPaths = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+			shellPath = /bin/sh;
+			shellScript = "set -e\n\nexport FRAMEWORK_LOCN=\"${BUILT_PRODUCTS_DIR}/${PRODUCT_NAME}.framework\"\n\n# Create the path to the real Headers die\nmkdir -p \"${FRAMEWORK_LOCN}/Versions/A/Headers\"\n\n# Create the required symlinks\n/bin/ln -sfh A \"${FRAMEWORK_LOCN}/Versions/Current\"\n/bin/ln -sfh Versions/Current/Headers \"${FRAMEWORK_LOCN}/Headers\"\n/bin/ln -sfh \"Versions/Current/${PRODUCT_NAME}\" \\\n\"${FRAMEWORK_LOCN}/${PRODUCT_NAME}\"\n\n# Copy the public headers into the framework\n/bin/cp -a \"${TARGET_BUILD_DIR}/${PUBLIC_HEADERS_FOLDER_PATH}/\" \\\n\"${FRAMEWORK_LOCN}/Versions/A/Headers\"\n";
+		};
+		0043F7B51DBF151D00C9A6C0 /* MultiPlatform Build */ = {
+			isa = PBXShellScriptBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			inputPaths = (
+			);
+			name = "MultiPlatform Build";
+			outputPaths = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+			shellPath = /bin/sh;
+			shellScript = "set -e\n\n# If we're already inside this script then die\nif [ -n \"$RW_MULTIPLATFORM_BUILD_IN_PROGRESS\" ]; then\nexit 0\nfi\nexport RW_MULTIPLATFORM_BUILD_IN_PROGRESS=1\n\nRW_FRAMEWORK_NAME=${PROJECT_NAME}\nRW_INPUT_STATIC_LIB=\"lib${PROJECT_NAME}.a\"\nRW_FRAMEWORK_LOCATION=\"${BUILT_PRODUCTS_DIR}/${RW_FRAMEWORK_NAME}.framework\"\nfunction build_static_library {\n    # Will rebuild the static library as specified\n    #     build_static_library sdk\n    xcrun xcodebuild -project \"${PROJECT_FILE_PATH}\" \\\n    -target \"${TARGET_NAME}\" \\\n    -configuration \"${CONFIGURATION}\" \\\n    -sdk \"${1}\" \\\n    ONLY_ACTIVE_ARCH=NO \\\n    BUILD_DIR=\"${BUILD_DIR}\" \\\n    OBJROOT=\"${OBJROOT}\" \\\n    BUILD_ROOT=\"${BUILD_ROOT}\" \\\n    SYMROOT=\"${SYMROOT}\" $ACTION\n}\n\nfunction make_fat_library {\n    # Will smash 2 static libs together\n    #     make_fat_library in1 in2 out\n    xcrun lipo -create \"${1}\" \"${2}\" -output \"${3}\"\n}\n# 1 - Extract the platform (iphoneos/iphonesimulator) from the SDK name\nif [[ \"$SDK_NAME\" =~ ([A-Za-z]+) ]]; then\nRW_SDK_PLATFORM=${BASH_REMATCH[1]}\nelse\necho \"Could not find platform name from SDK_NAME: $SDK_NAME\"\nexit 1\nfi\n\n# 2 - Extract the version from the SDK\nif [[ \"$SDK_NAME\" =~ ([0-9]+.*$) ]]; then\nRW_SDK_VERSION=${BASH_REMATCH[1]}\nelse\necho \"Could not find sdk version from SDK_NAME: $SDK_NAME\"\nexit 1\nfi\n\n# 3 - Determine the other platform\nif [ \"$RW_SDK_PLATFORM\" == \"iphoneos\" ]; then\nRW_OTHER_PLATFORM=iphonesimulator\nelse\nRW_OTHER_PLATFORM=iphoneos\nfi\n\n# 4 - Find the build directory\nif [[ \"$BUILT_PRODUCTS_DIR\" =~ (.*)$RW_SDK_PLATFORM$ ]]; then\nRW_OTHER_BUILT_PRODUCTS_DIR=\"${BASH_REMATCH[1]}${RW_OTHER_PLATFORM}\"\nelse\necho \"Could not find other platform build directory.\"\nexit 1\nfi\n# Build the other platform.\nbuild_static_library \"${RW_OTHER_PLATFORM}${RW_SDK_VERSION}\"\n\n# If we're currently building for iphonesimulator, then need to rebuild\n#   to ensure that we get both i386 and x86_64\nif [ \"$RW_SDK_PLATFORM\" == \"iphonesimulator\" ]; then\nbuild_static_library \"${SDK_NAME}\"\nfi\n\n# Join the 2 static libs into 1 and push into the .framework\nmake_fat_library \"${BUILT_PRODUCTS_DIR}/${RW_INPUT_STATIC_LIB}\" \\\n\"${RW_OTHER_BUILT_PRODUCTS_DIR}/${RW_INPUT_STATIC_LIB}\" \\\n\"${RW_FRAMEWORK_LOCATION}/Versions/A/${RW_FRAMEWORK_NAME}\"\n# Ensure that the framework is present in both platform's build directories\ncp -a \"${RW_FRAMEWORK_LOCATION}/Versions/A/${RW_FRAMEWORK_NAME}\" \\\n\"${RW_OTHER_BUILT_PRODUCTS_DIR}/${RW_FRAMEWORK_NAME}.framework/Versions/A/${RW_FRAMEWORK_NAME}\"\n\n# Copy the framework to the user's desktop\nditto \"${RW_FRAMEWORK_LOCATION}\" \"${HOME}/Desktop/${RW_FRAMEWORK_NAME}.framework\"\n\n# Copy the resources bundle to the user's desktop\nditto \"${BUILT_PRODUCTS_DIR}/${RW_FRAMEWORK_NAME}.bundle\" \\\n\"${HOME}/Desktop/${RW_FRAMEWORK_NAME}.bundle\"";
+		};
+/* End PBXShellScriptBuildPhase section */
 
 /* Begin PBXSourcesBuildPhase section */
 		0043F7401DBF019200C9A6C0 /* Sources */ = {
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
-				0043F7491DBF019200C9A6C0 /* IndieCore.m in Sources */,
+				0043F75B1DBF097200C9A6C0 /* IndieCore.m in Sources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		0043F7FA1DBF26BC00C9A6C0 /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
 /* End PBXSourcesBuildPhase section */
+
+/* Begin PBXTargetDependency section */
+		0043F7B41DBF150D00C9A6C0 /* PBXTargetDependency */ = {
+			isa = PBXTargetDependency;
+			target = 0043F7431DBF019200C9A6C0 /* IndieCore */;
+			targetProxy = 0043F7B31DBF150D00C9A6C0 /* PBXContainerItemProxy */;
+		};
+		0043F8051DBF273700C9A6C0 /* PBXTargetDependency */ = {
+			isa = PBXTargetDependency;
+			target = 0043F7FD1DBF26BC00C9A6C0 /* IndieCoreResources */;
+			targetProxy = 0043F8041DBF273700C9A6C0 /* PBXContainerItemProxy */;
+		};
+/* End PBXTargetDependency section */
 
 /* Begin XCBuildConfiguration section */
 		0043F74B1DBF019200C9A6C0 /* Debug */ = {
@@ -221,18 +407,68 @@
 		0043F74E1DBF019200C9A6C0 /* Debug */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
+				DEAD_CODE_STRIPPING = NO;
 				OTHER_LDFLAGS = "-ObjC";
 				PRODUCT_NAME = "$(TARGET_NAME)";
+				PUBLIC_HEADERS_FOLDER_PATH = "include/$(PROJECT_NAME)";
 				SKIP_INSTALL = YES;
+				STRIP_STYLE = "non-global";
 			};
 			name = Debug;
 		};
 		0043F74F1DBF019200C9A6C0 /* Release */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
+				DEAD_CODE_STRIPPING = NO;
 				OTHER_LDFLAGS = "-ObjC";
 				PRODUCT_NAME = "$(TARGET_NAME)";
+				PUBLIC_HEADERS_FOLDER_PATH = "include/$(PROJECT_NAME)";
 				SKIP_INSTALL = YES;
+				STRIP_STYLE = "non-global";
+			};
+			name = Release;
+		};
+		0043F7B11DBF14F500C9A6C0 /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				PRODUCT_NAME = "$(TARGET_NAME)";
+			};
+			name = Debug;
+		};
+		0043F7B21DBF14F500C9A6C0 /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				PRODUCT_NAME = "$(TARGET_NAME)";
+			};
+			name = Release;
+		};
+		0043F8021DBF26BC00C9A6C0 /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				CODE_SIGN_IDENTITY = "-";
+				COMBINE_HIDPI_IMAGES = NO;
+				INFOPLIST_FILE = IndieCoreResources/Info.plist;
+				INSTALL_PATH = "$(LOCAL_LIBRARY_DIR)/Bundles";
+				MACOSX_DEPLOYMENT_TARGET = 10.11;
+				PRODUCT_BUNDLE_IDENTIFIER = IndieSquare.IndieCoreResources;
+				PRODUCT_NAME = IndieCore;
+				SKIP_INSTALL = YES;
+				WRAPPER_EXTENSION = bundle;
+			};
+			name = Debug;
+		};
+		0043F8031DBF26BC00C9A6C0 /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				CODE_SIGN_IDENTITY = "-";
+				COMBINE_HIDPI_IMAGES = NO;
+				INFOPLIST_FILE = IndieCoreResources/Info.plist;
+				INSTALL_PATH = "$(LOCAL_LIBRARY_DIR)/Bundles";
+				MACOSX_DEPLOYMENT_TARGET = 10.11;
+				PRODUCT_BUNDLE_IDENTIFIER = IndieSquare.IndieCoreResources;
+				PRODUCT_NAME = IndieCore;
+				SKIP_INSTALL = YES;
+				WRAPPER_EXTENSION = bundle;
 			};
 			name = Release;
 		};
@@ -255,6 +491,25 @@
 				0043F74F1DBF019200C9A6C0 /* Release */,
 			);
 			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
+		0043F7B01DBF14F500C9A6C0 /* Build configuration list for PBXAggregateTarget "Framework" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				0043F7B11DBF14F500C9A6C0 /* Debug */,
+				0043F7B21DBF14F500C9A6C0 /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
+		0043F8011DBF26BC00C9A6C0 /* Build configuration list for PBXNativeTarget "IndieCoreResources" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				0043F8021DBF26BC00C9A6C0 /* Debug */,
+				0043F8031DBF26BC00C9A6C0 /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
 		};
 /* End XCConfigurationList section */
 	};

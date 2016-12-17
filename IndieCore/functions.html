@@ -1,0 +1,243 @@
+
+<script src="bitcore.js"></script>
+<script src="mnemonic.js"></script>
+<script>
+
+var basePath = 'm/0\'/0/';
+var account = null;
+ var bitcore = require('bitcore');
+ 
+ 
+ 
+ 
+function init(passphrase, derive, nokeep){
+    
+    if( passphrase == null ){
+     
+      document.location.href = "http://www.indiecorelocal.com/params?init=error";
+      
+      return;
+    }
+    
+   
+  
+   var words = passphrase.split(' ');
+   
+   try {
+        var seed = new Mnemonic(words).toHex();
+   }
+   catch(err) {
+       document.location.href = "http://www.indiecorelocal.com/params?init="+err;
+       
+       return;
+   }
+ 
+
+
+    var master = bitcore.HDPrivateKey.fromSeed(seed);
+    
+    var d = basePath + '0';
+    if( derive != null ) d = derive;
+    
+    var masterderive = master.derive( d );
+    if( !nokeep ) account = masterderive;
+    
+    
+    document.location.href = "http://www.indiecorelocal.com/params?init="+masterderive;
+    
+    
+};
+function getKeyForPassphrase(passphrase,d){
+    
+    var words = passphrase.split(' ');
+    
+    try {
+        var seed = new Mnemonic(words).toHex();
+    }
+    catch(err) {
+       
+        
+         throw  err;
+    }
+  
+    
+    var master = bitcore.HDPrivateKey.fromSeed(seed);
+    
+    var route = basePath + d;
+    
+    var masterderive = master.derive( route );
+    
+    return masterderive;
+    
+}
+function isValidBitcoinAddress(address){
+    
+        if( bitcore.Address.isValid(address, 'livenet') ){
+            document.location.href = "http://www.indiecorelocal.com/params?address_valid=true";
+            return;
+
+        }
+        else{
+            document.location.href = "http://www.indiecorelocal.com/params?address_valid=false";
+            return;
+        }
+
+}
+function getAddressForPassphrase(passphrase,d){
+    
+     try {
+    
+        var masterderive = getKeyForPassphrase(passphrase,d);
+       
+      
+        var priv = bitcore.PrivateKey(masterderive.privateKey);
+        
+        document.location.href = "http://www.indiecorelocal.com/params?address_passphrase="+priv.toAddress().toString();
+
+   
+     }
+     catch(err) {
+         
+         
+         document.location.href = "http://www.indiecorelocal.com/params?address_passphrase=error:"+err;
+         return;
+     }
+    
+   
+  
+  
+}
+function createRandomDetailedWallet(){
+    
+    
+    var privateKey = new bitcore.PrivateKey();
+    var wif = privateKey.toWIF();
+    
+    var address = privateKey.toAddress();
+    var publicKey = privateKey.toPublicKey();
+        
+    document.location.href = "http://www.indiecorelocal.com/params?random_wallet=true&priv_key="+privateKey+"&wif="+wif+"&address="+address.toString()+"&public_key="+publicKey;
+    return;
+    
+    
+}
+function createNewPassphrase() {
+  
+  var words = null;
+  try {
+      var m = new Mnemonic(words);
+      document.location.href = "http://www.indiecorelocal.com/params?create_passphrase="+m.toWords().toString().replace(/,/gi, ' ');
+  }
+  catch(err) {
+      document.location.href = "http://www.indiecorelocal.com/params?create_passphrase=error:"+err;
+      
+      return;
+  }
+
+
+}
+
+function signTransaction(passphrase,d,raw_tx,destination,apiKey) {
+    
+    
+    try {
+        var params = {};
+        var masterderive = getKeyForPassphrase(passphrase,d);
+        
+        params.pubkey = masterderive.publicKey;
+       
+        params.destination = destination;
+        
+        var privkey = bitcore.PrivateKey(masterderive.privateKey);
+        
+        params.address = privkey.toAddress().toString();
+        params.callback = function(signed_tx){
+                document.location.href = "http://www.indiecorelocal.com/params?sign_transaction="+signed_tx;
+            
+        };
+        params.onError = function(error){
+            document.location.href = "http://www.indiecorelocal.com/params?sign_transaction=error:"+error;
+            
+        };
+        params.fail = function(error){
+            document.location.href = "http://www.indiecorelocal.com/params?sign_transaction=error:"+error;
+            
+        };
+         try {
+             
+            var result = bitcore.signrawtransaction(raw_tx, privkey, params,apiKey);
+            
+            
+         }
+         catch(err) {
+             
+              document.location.href = "http://www.indiecorelocal.com/params?sign_transaction=error:"+err;
+              return;
+         }
+        
+        
+    }
+    catch(err) {
+        
+        
+        document.location.href = "http://www.indiecorelocal.com/params?address_passphrase=error:"+err;
+        return;
+    }
+    
+    
+}
+
+function signTransactionNoDest(passphrase,d,raw_tx,apiKey) {
+    
+    try {
+        var params = {};
+        
+        var masterderive = getKeyForPassphrase(passphrase,d);
+        
+        params.pubkey = masterderive.publicKey;
+        
+        var privkey = bitcore.PrivateKey(masterderive.privateKey);
+        
+        params.address = privkey.toAddress().toString();
+        params.callback = function(signed_tx){
+            document.location.href = "http://www.indiecorelocal.com/params?sign_transaction="+signed_tx;
+            
+        };
+        params.onError = function(error){
+            document.location.href = "http://www.indiecorelocal.com/params?sign_transaction=error:"+error;
+            
+        };
+        params.fail = function(error){
+            document.location.href = "http://www.indiecorelocal.com/params?sign_transaction=error:"+error;
+            
+        };
+        try {
+            
+            var result = bitcore.signrawtransaction(raw_tx, privkey, params,apiKey);
+            
+            
+        }
+        catch(err) {
+            
+            document.location.href = "http://www.indiecorelocal.com/params?sign_transaction=error:"+err;
+            return;
+        }
+        
+        
+    }
+    catch(err) {
+        
+        
+        document.location.href = "http://www.indiecorelocal.com/params?address_passphrase=error:"+err;
+        return;
+    }
+    
+    
+}
+
+
+
+
+</script>
+
+
