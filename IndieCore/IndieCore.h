@@ -21,6 +21,7 @@
 - (void)didInitiateCore:(NSString*)message;
 - (void)didCheckAddressValid:(BOOL)isValid;
 - (void)didGenerateRandomDetailedWallet:(NSString*)privateKey andWif:(NSString*)wif andPublicKey:(NSString*)publicKey andAddress:(NSString*)address;
+- (void)didCreateNumericTokenName:(NSString*)tokenName;
 @end
 
 
@@ -36,9 +37,13 @@ typedef void (^completionBlock)(BOOL success, NSDictionary *response);
 -(void)generateRandomDetailedWallet;
 -(void)checkIfAddressIsValid:(NSString*)passphrase;
 
+
+
 -(void)broadcastTransaction:(NSString*)signedTx andCompletion:(completionBlock)completionBlock;
 
 -(BOOL)checkIfTokenExists:(NSString*)token;
+
+-(void)createNumericTokenName;
 
 -(NSDictionary*)issueToken:(NSString*)source andTokenName:(NSString*)token andQuantity:(double)quantity andDivisible:(BOOL)divisible;
 -(NSDictionary*)issueToken:(NSString*)source andTokenName:(NSString*)token andQuantity:(double)quantity andDivisible:(BOOL)divisible andDescription:(NSString*)description;

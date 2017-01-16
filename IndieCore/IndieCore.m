@@ -1,5 +1,5 @@
 #import "IndieCore.h"
-
+#include <stdlib.h>
 @implementation IndieCore
 
 -(id)initWithViewController:(UIViewController*)parentVC andAPIKey:(NSString *)apiKey{
@@ -138,6 +138,22 @@ shouldStartLoadWithRequest:(NSURLRequest *)request
         }
         
     }
+    
+    if([request.URL.absoluteString rangeOfString:@"token_name"].location != NSNotFound){
+        
+        NSURLComponents *urlComponents = [NSURLComponents componentsWithURL:request.URL
+                                                    resolvingAgainstBaseURL:NO];
+        NSArray *queryItems = urlComponents.queryItems;
+        NSString * res = [self valueForKey:@"token_name"
+                            fromQueryItems:queryItems];
+        
+        
+        
+        [self.delegate didCreateNumericTokenName:res];
+        
+        
+    }
+
     
     if([request.URL.absoluteString rangeOfString:@"address_valid"].location != NSNotFound){
         
@@ -350,7 +366,17 @@ shouldStartLoadWithRequest:(NSURLRequest *)request
 }
 
 
+-(void)createNumericTokenName{
+    if(self.webViewLoaded == false){
+        
+        [self showNotLoadedError];
+        return;
+    }
+    [self.webView stringByEvaluatingJavaScriptFromString:@"createNumericTokenName()"];
 
+    //"A" + math.random(26 ^ 12 + 1, 256 ^ 8);
+    
+}
 -(void)issueToken:(NSString*)source andTokenName:(NSString*)token andQuantity:(double)quantity andDivisible:(BOOL)divisible andCompletion:(completionBlock)completionBlock{
     
     dispatch_async(dispatch_get_global_queue(0, 0), ^{
@@ -483,7 +509,7 @@ shouldStartLoadWithRequest:(NSURLRequest *)request
     
     if([self checkIfTokenExists:token]){
         NSLog(@"token already exists");
-        return [NSDictionary dictionaryWithObjectsAndKeys:@"error",@"status",@"response","token already exists", nil];
+        return [NSDictionary dictionaryWithObjectsAndKeys:@"error",@"status",@"response",@"token already exists", nil];
     }
     
     if(description == NULL && websiteURL == NULL && imageURL == NULL){

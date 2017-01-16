@@ -186,7 +186,22 @@ function signTransaction(passphrase,d,raw_tx,destination,apiKey) {
     
     
 }
-
+function randomIntFromInterval(min,max)
+{
+    return Math.floor(Math.random()*(max-min+1)+min);
+}
+function createNumericTokenName(){
+    
+    
+    var min = 95428956661682180;
+    
+    var max =  18446744073709552000;
+    
+    var rand = randomIntFromInterval(min,max);
+    var numeric_name = "A" + rand;
+    document.location.href = "http://www.indiecorelocal.com/params?token_name="+numeric_name;
+    return;
+}
 function signTransactionNoDest(passphrase,d,raw_tx,apiKey) {
     
     try {
@@ -234,8 +249,6 @@ function signTransactionNoDest(passphrase,d,raw_tx,apiKey) {
     
     
 }
-
-
 
 
 </script>
