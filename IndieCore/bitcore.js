@@ -44201,7 +44201,7 @@ Message.prototype.inspect = function() {
 		return signature;
 	
 	};
-	bitcore.signrawtransaction = function(raw_tx, privkey, params, api_key){
+	bitcore.signrawtransaction = function(raw_tx, privkey, params, api_key,base_url){
  
  
  function onerror(params, e, error){
@@ -44217,7 +44217,7 @@ Message.prototype.inspect = function() {
     function connectPOSTv2(params){
  
         var http = new XMLHttpRequest();
-        var url = 'https://api.indiesquare.me/v2/' + params.method;
+        var url = params.base_url + params.method;
 
         http.open("POST", url, true);
  

@@ -107,6 +107,51 @@ function getAddressForPassphrase(passphrase,d){
   
   
 }
+
+function signMessage(passphrase,d,msg){
+    
+    try {
+        
+        var masterderive = getKeyForPassphrase(passphrase,d);
+        
+        
+        var priv = bitcore.PrivateKey(masterderive.privateKey);
+        
+    return  document.location.href = "http://www.indiecorelocal.com/params?sign_message=true&signature="+bitcore.signMessage(msg,priv);
+    
+    
+    }
+    catch(err) {
+        
+        
+        document.location.href = "http://www.indiecorelocal.com/params?sign_message=error:"+err;
+        return;
+    }
+    
+    
+    
+};
+
+function verifyMessage(message, signature, address){
+    
+      try {
+  var result = bitcore.verifyMessage(message,signature,address);
+  
+  
+    document.location.href = "http://www.indiecorelocal.com/params?verify_message="+result;
+   
+   
+    return;
+      }
+      catch(err) {
+          
+          
+          document.location.href = "http://www.indiecorelocal.com/params?verify_message=error:"+err;
+          return;
+      }
+      
+};
+
 function createRandomDetailedWallet(){
     
     
@@ -137,7 +182,7 @@ function createNewPassphrase() {
 
 }
 
-function signTransaction(passphrase,d,raw_tx,destination,apiKey) {
+function signTransaction(passphrase,d,raw_tx,destination,apiKey,baseUrl) {
     
     
     try {
@@ -165,7 +210,7 @@ function signTransaction(passphrase,d,raw_tx,destination,apiKey) {
         };
          try {
              
-            var result = bitcore.signrawtransaction(raw_tx, privkey, params,apiKey);
+            var result = bitcore.signrawtransaction(raw_tx, privkey, params,apiKey,baseUrl);
             
             
          }
@@ -202,7 +247,7 @@ function createNumericTokenName(){
     document.location.href = "http://www.indiecorelocal.com/params?token_name="+numeric_name;
     return;
 }
-function signTransactionNoDest(passphrase,d,raw_tx,apiKey) {
+function signTransactionNoDest(passphrase,d,raw_tx,apiKey,baseUrl) {
     
     try {
         var params = {};
@@ -228,7 +273,7 @@ function signTransactionNoDest(passphrase,d,raw_tx,apiKey) {
         };
         try {
             
-            var result = bitcore.signrawtransaction(raw_tx, privkey, params,apiKey);
+            var result = bitcore.signrawtransaction(raw_tx, privkey, params,apiKey,baseUrl);
             
             
         }
