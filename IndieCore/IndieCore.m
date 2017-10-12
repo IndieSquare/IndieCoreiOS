@@ -2,28 +2,136 @@
 #include <stdlib.h>
 @implementation IndieCore
 
--(id)initWithViewController:(UIViewController*)parentVC andAPIKey:(NSString *)apiKey andTestNet:(bool)testnet{
+-(id)initWithViewController:(UIViewController*)parentVC andAPIKey:(NSString *)apiKey andTestNet:(bool)testnet andCompletion:(completionBlock)completionBlock{
     self = [super init];
     if(self){
         
+        self.currentCompletion = completionBlock;
         self.webView = [[UIWebView alloc] initWithFrame:parentVC.view.frame];
         
         self.webView.delegate = self;
         self.apiKey = apiKey;
         self.webView.hidden = true; //hide webview so it runs unnoticed to the user
         [parentVC.view addSubview:self.webView];
-        
+        self.base = @"https://indiesquare.me";
         self.testnet = testnet;
           self.baseUrl = @"https://api.indiesquare.me/v2/";
         if(testnet){
             
             self.baseUrl = @"https://apitestnet.indiesquare.me/v2/";
         }
-        
+       
         [self loadfunctions];
         
     }
     return self;
+}
+-(void)linkageWallet:(NSDictionary*)params andChannel:(NSString*)channel andUrlScheme:(NSString*)MyUrlScheme{
+   
+    
+    NSString * request = [params objectForKey:@"request"];
+    NSString * nonce = [[NSProcessInfo processInfo] globallyUniqueString];
+    NSMutableDictionary * newParams =  [NSMutableDictionary dictionaryWithObjectsAndKeys:channel,@"channel",nonce,@"nonce",MyUrlScheme,@"x-success", nil];
+    
+    if([request isEqualToString:@"sign"]){
+        [newParams setObject:[params objectForKey:@"unsigned_hex"] forKey:@"unsigned_hex"];
+    }
+    
+    NSString *jsonRequest =  [[self dictionaryToJSON:newParams] stringByAddingPercentEscapesUsingEncoding:NSUTF8StringEncoding];
+   
+   NSString * urlParams = [NSString stringWithFormat:@"%@?params=%@",request,jsonRequest];
+    
+    if([request isEqualToString:@"getaddress"] || [request isEqualToString:@"verifyuser"]){
+       NSString * xcallback_params = [NSString stringWithFormat:@"channel=%@&nonce=%@&x-success=%@&msg=%@",channel,nonce,MyUrlScheme,channel];
+        
+        
+      urlParams = [NSString stringWithFormat:@"x-callback-url/%@?%@",request,xcallback_params];
+    }
+  
+ 
+    NSString * url  =[NSString stringWithFormat:@"indiewallet://%@",urlParams];
+  
+    NSURL * theurl = [NSURL URLWithString: url];
+    
+    
+    [[UIApplication sharedApplication] openURL:theurl];
+    
+    
+    
+    
+    
+}
+-(void)signTransactionWithWallet:(NSString*)myUrlScheme andTx:(NSString *)unsignedTx andCompletion:(completionBlock)completionBlock{
+    
+    NSString* channel = [NSString stringWithFormat:@"indie-%@",[[NSProcessInfo processInfo] globallyUniqueString]];
+    
+    [self pubsub:channel andParams:[NSDictionary dictionaryWithObjectsAndKeys:@"sign",@"request",unsignedTx,@"unsigned_hex", nil] andUrlScheme:myUrlScheme andCompletion:^(NSError *error, NSDictionary *response) {
+        
+        completionBlock(error,response);
+        
+    }];
+}
+-(void)getAddressFromWallet:(NSString*)myUrlScheme andCompletion:(completionBlock)completionBlock{
+    
+    NSString* channel = [NSString stringWithFormat:@"indie-%@",[[NSProcessInfo processInfo] globallyUniqueString]];
+    
+    [self pubsub:channel andParams:[NSDictionary dictionaryWithObjectsAndKeys:@"getaddress",@"request", nil] andUrlScheme:myUrlScheme andCompletion:^(NSError *error, NSDictionary *response) {
+        
+        NSDictionary * data = [response objectForKey:@"data"];
+        if(data != NULL){
+            NSString * address = [data objectForKey:@"address"];
+          
+            NSString * signature = [data objectForKey:@"signature"];
+            
+            [self verifyMessage:channel andSignature:signature andAddress:address andCompletion:^(NSError*error, NSDictionary *response) {
+                if(error != NULL){
+                      completionBlock(error,response);
+                }else{
+                    
+                    if([[response objectForKey:@"verified"] isEqualToString:@"true"]){
+                        
+                        completionBlock(NULL,[NSDictionary dictionaryWithObjectsAndKeys:address,@"address", nil]);
+                    }else{
+                         completionBlock([NSError errorWithDomain:@"IndieCore"  code:100 userInfo:@{ NSLocalizedDescriptionKey:@"error verifying address" }],NULL);
+                    }
+                    
+                }
+                
+            }];
+        }
+        
+        
+      
+        
+    }];
+}
+
+-(void)pubsub:(NSString*)channel andParams:(NSDictionary*)params andUrlScheme:(NSString*)myUrlScheme andCompletion:(completionBlock)completionBlock{
+ 
+    
+    NSString* postString = [NSString stringWithFormat:@"channel=%@",channel];
+   
+    [self postAsyncObject:[NSString stringWithFormat:@"%@/pubsub/topic",self.base] andPost:postString andCompletion:^(NSError *error, NSDictionary *response) {
+        
+        if(error != NULL){
+            completionBlock(error,NULL);
+        }
+        [self linkageWallet:params andChannel:channel andUrlScheme:myUrlScheme];
+        
+         NSString* postString = [NSString stringWithFormat:@"channel=%@&type=1",channel];
+       
+        
+        [self postAsyncObject:[NSString stringWithFormat:@"%@/pubsub/subscribe",self.base] andPost:postString andCompletion:^(NSError *error, NSDictionary *response) {
+            
+            if(error != NULL){
+                completionBlock(error,NULL);
+            }
+            
+              completionBlock(NULL,response);
+            
+        }];
+        
+    }];
 }
 
 -(void)loadfunctions{
@@ -71,7 +179,13 @@
     
     if(self.webViewLoaded == false){
         self.webViewLoaded = true;
-        [self.delegate didInitiateCore:@"success"];
+        
+        if(self.currentCompletion != NULL){
+        
+            self.currentCompletion(NULL, [NSDictionary dictionaryWithObjectsAndKeys:@"true",@"initialized" ,nil]);
+        }
+     
+        self.currentCompletion = NULL;
     }
     
 }
@@ -79,16 +193,18 @@
 
 -(void)webView:(UIWebView *)webView didFailLoadWithError:(NSError *)error{
     if(self.webViewLoaded == false){
-        NSLog(@"IndieCore loading error");
+        if(self.currentCompletion != NULL){
+            self.currentCompletion(error, [NSDictionary dictionaryWithObjectsAndKeys:@"false",@"initialized" ,nil]);
+        }
+        
+        self.currentCompletion = NULL;
     }
 }
 //intercepts the returned data from the webview
 - (BOOL)webView:(UIWebView *)webView
 shouldStartLoadWithRequest:(NSURLRequest *)request
  navigationType:(UIWebViewNavigationType)navigationType {
-      NSLog(@"pressed callback");
     
-   
     
     if([request.URL.absoluteString rangeOfString:@"sign_transaction"].location != NSNotFound){
         
@@ -104,7 +220,10 @@ shouldStartLoadWithRequest:(NSURLRequest *)request
             [self.delegate didSignTransaction:res];
         }
         
-         [self loadfunctions];
+        self.currentCompletion(NULL, [NSDictionary dictionaryWithObjectsAndKeys:res,@"tx",nil]);
+        
+        [self loadfunctions];
+        self.currentCompletion = NULL;
         
     }
     
@@ -116,13 +235,12 @@ shouldStartLoadWithRequest:(NSURLRequest *)request
         NSString * res = [self valueForKey:@"address_passphrase"
                             fromQueryItems:queryItems];
         
-        if([res rangeOfString:@"error"].location != NSNotFound){
-            [self.delegate generateAddressError:res];
-        }else{
-            [self.delegate didGenerateAddress:res];
-        }
         
-         [self loadfunctions];
+        self.currentCompletion(NULL, [NSDictionary dictionaryWithObjectsAndKeys:res,@"address",nil]);
+        
+        [self loadfunctions];
+        self.currentCompletion = NULL;
+        
     }
     
     if([request.URL.absoluteString rangeOfString:@"random_wallet"].location != NSNotFound){
@@ -142,11 +260,10 @@ shouldStartLoadWithRequest:(NSURLRequest *)request
         NSString * address = [self valueForKey:@"address"
                                    fromQueryItems:queryItems];
 
-        
-      
-        [self.delegate didGenerateRandomDetailedWallet:priv_key andWif:priv_key_wif andPublicKey:public_key andAddress:address];
+        self.currentCompletion(NULL, [NSDictionary dictionaryWithObjectsAndKeys:priv_key,@"priv_key",priv_key_wif,@"wif",public_key,@"public_key",address,@"address" ,nil]);
         
          [self loadfunctions];
+        self.currentCompletion = NULL;
         
     }
     
@@ -161,14 +278,11 @@ shouldStartLoadWithRequest:(NSURLRequest *)request
         
         
         
-        if([res rangeOfString:@"error"].location != NSNotFound){
-            [self.delegate createWalletError:res];
-        }else{
-            [self.delegate didCreateWallet:res];
-        }
+        self.currentCompletion(NULL, [NSDictionary dictionaryWithObjectsAndKeys:res,@"wallet", nil]);
         
-         [self loadfunctions];
         
+        [self loadfunctions];
+        self.currentCompletion = NULL;
     }
     
     if([request.URL.absoluteString rangeOfString:@"token_name"].location != NSNotFound){
@@ -181,9 +295,13 @@ shouldStartLoadWithRequest:(NSURLRequest *)request
         
         
         
-        [self.delegate didCreateNumericTokenName:res];
+        self.currentCompletion(NULL, [NSDictionary dictionaryWithObjectsAndKeys:res,@"name", nil]);
         
-         [self loadfunctions];
+ 
+    [self loadfunctions];
+    self.currentCompletion = NULL;
+        
+        
     }
 
     
@@ -196,35 +314,13 @@ shouldStartLoadWithRequest:(NSURLRequest *)request
                             fromQueryItems:queryItems];
         
         
+        self.currentCompletion(NULL,  [NSDictionary dictionaryWithObjectsAndKeys:res,@"verified", nil]);
         
-        if([res isEqualToString:@"true"]){
-            [self.delegate didCheckAddressValid:true];
-        }else{
-            [self.delegate didCheckAddressValid:false];
-        }
          [self loadfunctions];
+        self.currentCompletion = NULL;
     }
     
-    
-    if([request.URL.absoluteString rangeOfString:@"signature"].location != NSNotFound){
-        
-        NSURLComponents *urlComponents = [NSURLComponents componentsWithURL:request.URL
-                                                    resolvingAgainstBaseURL:NO];
-        NSArray *queryItems = urlComponents.queryItems;
-        
-        
-        NSString * message = [self valueForKey:@"message"
-                                fromQueryItems:queryItems];
-        NSString * signature = [self valueForKey:@"signature"
-                                  fromQueryItems:queryItems];
-        NSString * publicKey = [self valueForKey:@"public_key"
-                                  fromQueryItems:queryItems];
-        
-        NSLog(@"message:%@\nsignature:%@\npublic key:%@",message,signature,publicKey);
-         [self loadfunctions];
-        
-    }
-    
+ 
     if([request.URL.absoluteString rangeOfString:@"sign_message"].location != NSNotFound){
       
         NSURLComponents *urlComponents = [NSURLComponents componentsWithURL:request.URL
@@ -239,21 +335,21 @@ shouldStartLoadWithRequest:(NSURLRequest *)request
          
         if([status isEqualToString:@"true"]){
             
-            self.currentCompletion(true,  [NSDictionary dictionaryWithObjectsAndKeys:signature,@"sig", nil]);
+            self.currentCompletion(NULL,  [NSDictionary dictionaryWithObjectsAndKeys:signature,@"sig", nil]);
         
         }
         else{
            
-            self.currentCompletion(false,  [NSDictionary dictionaryWithObjectsAndKeys:@"error signing",@"sig", nil]);
+            self.currentCompletion([NSError errorWithDomain:@"IndieCore"  code:100 userInfo:@{ NSLocalizedDescriptionKey:@"error signing" }],  [NSDictionary dictionaryWithObjectsAndKeys:@"error signing",@"sig", nil]);
             
         }
-        
-        self.currentCompletion = NULL;
+        [self loadfunctions];
+       self.currentCompletion = NULL;
         
     }
     
     if([request.URL.absoluteString rangeOfString:@"verify_message"].location != NSNotFound){
-        NSLog(@"verify %@",request.URL.absoluteString);
+        
         NSURLComponents *urlComponents = [NSURLComponents componentsWithURL:request.URL
                                                     resolvingAgainstBaseURL:NO];
         NSArray *queryItems = urlComponents.queryItems;
@@ -265,36 +361,45 @@ shouldStartLoadWithRequest:(NSURLRequest *)request
         
         if([status isEqualToString:@"true"]){
             
-            self.currentCompletion(true,  [NSDictionary dictionaryWithObjectsAndKeys:@"true",@"verified", nil]);
+            self.currentCompletion(NULL,  [NSDictionary dictionaryWithObjectsAndKeys:@"true",@"verified", nil]);
             
         }
         else{
             
-            self.currentCompletion(true, [NSDictionary dictionaryWithObjectsAndKeys:@"false",@"verified", nil]);
+            self.currentCompletion(NULL, [NSDictionary dictionaryWithObjectsAndKeys:@"false",@"verified", nil]);
             
         }
-        
+         [self loadfunctions];
         self.currentCompletion = NULL;
         
     }
     
-    
+   
     
     
     return YES;
 }
--(void)signMessage:(NSString*)message andPassphrase:(NSString*)passphrase andIndex:(int)index andCompletion:(completionBlock)completionBlock{
+-(BOOL)checkCompletion:(completionBlock)completionBlock{
     if(self.currentCompletion != NULL){
         
-        completionBlock(false,[NSDictionary dictionaryWithObjectsAndKeys:@"another task is already running",@"error", nil]);
+        completionBlock([NSError errorWithDomain:@"IndieCore"  code:100 userInfo:@{ NSLocalizedDescriptionKey:@"another task is already running" }],[NSDictionary dictionaryWithObjectsAndKeys:@"another task is already running",@"error", nil]);
+        return false;
     }
     
     self.currentCompletion = completionBlock;
     
     if(self.webViewLoaded == false){
         
-        [self showNotLoadedError];
-        completionBlock(false,[NSDictionary dictionaryWithObjectsAndKeys:@"error",@"error", nil]);
+        
+        completionBlock([NSError errorWithDomain:@"IndieCore"  code:100 userInfo:@{ NSLocalizedDescriptionKey:@"IndieCore not initialized" }],[NSDictionary dictionaryWithObjectsAndKeys:@"error",@"error", nil]);
+         return false;
+    }
+     return true;
+}
+
+-(void)signMessage:(NSString*)message andPassphrase:(NSString*)passphrase andIndex:(int)index andCompletion:(completionBlock)completionBlock{
+    if(![self checkCompletion:completionBlock]){
+        return;
     }
     
     NSString * request = [NSString stringWithFormat:@"signMessage(\"%@\",%d,\"%@\")",passphrase,index,message];
@@ -308,17 +413,8 @@ shouldStartLoadWithRequest:(NSURLRequest *)request
 }
 -(void)verifyMessage:(NSString*)message andSignature:(NSString*)signature andAddress:(NSString*)address andCompletion:(completionBlock)completionBlock{
     
-    if(self.currentCompletion != NULL){
-        
-        completionBlock(false,[NSDictionary dictionaryWithObjectsAndKeys:@"another task is already running",@"error", nil]);
-    }
-    
-    self.currentCompletion = completionBlock;
-    
-    if(self.webViewLoaded == false){
-        
-        [self showNotLoadedError];
-        completionBlock(false,[NSDictionary dictionaryWithObjectsAndKeys:@"error",@"error", nil]);
+    if(![self checkCompletion:completionBlock]){
+        return;
     }
     
     
@@ -331,25 +427,13 @@ shouldStartLoadWithRequest:(NSURLRequest *)request
     });
     
 }
--(void)showNotLoadedError{
-    UIAlertView *alert = [[UIAlertView alloc] initWithTitle:@"Error"
-                                                    message:@"Library has not initiated yet"
-                                                   delegate:self
-                                          cancelButtonTitle:@"OK"
-                                          otherButtonTitles:nil];
-    [alert show];
-    
-    
-}
--(void)signTransacation:(NSString*)tx andPassphrase:(NSString*)passphrase andIndex:(int)index andDestination:(NSString*)destination{
-    
-    if(self.webViewLoaded == false){
-        
-        [self showNotLoadedError];
+
+-(void)signTransacation:(NSString*)tx andPassphrase:(NSString*)passphrase andIndex:(int)index andDestination:(NSString*)destination andCompletion:(completionBlock)completionBlock{
+    if(![self checkCompletion:completionBlock]){
         return;
     }
     
-    NSString * request = [NSString stringWithFormat:@"signTransaction(\"%@\",%d,\"%@\",\"%@\",\"%@\")",passphrase,index,tx,destination,self.apiKey,self.baseUrl];
+    NSString * request = [NSString stringWithFormat:@"signTransaction(\"%@\",%d,\"%@\",\"%@\",\"%@\",\"%@\")",passphrase,index,tx,destination,self.apiKey,self.baseUrl];
    
      dispatch_async(dispatch_get_main_queue(), ^{
     
@@ -359,15 +443,13 @@ shouldStartLoadWithRequest:(NSURLRequest *)request
     
 }
 
--(void)signTransacation:(NSString*)tx andPassphrase:(NSString*)passphrase andIndex:(int)index{
+-(void)signTransacation:(NSString*)tx andPassphrase:(NSString*)passphrase andIndex:(int)index andCompletion:(completionBlock)completionBlock{
     
-    if(self.webViewLoaded == false){
-        
-        [self showNotLoadedError];
+    if(![self checkCompletion:completionBlock]){
         return;
     }
     
-    NSString * request = [NSString stringWithFormat:@"signTransactionNoDest(\"%@\",%d,\"%@\",\"%@\")",passphrase,index,tx,self.apiKey,self.baseUrl];
+    NSString * request = [NSString stringWithFormat:@"signTransactionNoDest(\"%@\",%d,\"%@\",\"%@\",\"%@\")",passphrase,index,tx,self.apiKey,self.baseUrl];
 
     
     dispatch_async(dispatch_get_main_queue(), ^{
@@ -379,32 +461,25 @@ shouldStartLoadWithRequest:(NSURLRequest *)request
     
 }
 
--(void)generateRandomDetailedWallet{
-    NSLog(@"pressed1");
-    if(self.webViewLoaded == false){
-          NSLog(@"pressed x");
-        [self showNotLoadedError];
+-(void)generateRandomDetailedWallet:(completionBlock)completionBlock{
+   
+    if(![self checkCompletion:completionBlock]){
         return;
     }
-      NSLog(@"pressed2");
+    
     [self.webView stringByEvaluatingJavaScriptFromString:@"createRandomDetailedWallet()"];
 
 }
--(void)createNewWallet{
-    if(self.webViewLoaded == false){
-        
-        [self showNotLoadedError];
+-(void)createNewWallet:(completionBlock)completionBlock{
+    if(![self checkCompletion:completionBlock]){
         return;
     }
     [self.webView stringByEvaluatingJavaScriptFromString:@"createNewPassphrase()"];
     
 }
--(void)checkIfAddressIsValid:(NSString *)address{
+-(void)checkIfAddressIsValid:(NSString *)address andCompletion:(completionBlock)completionBlock{
     
-    if(self.webViewLoaded == false){
-            
-        [self showNotLoadedError];
-            
+    if(![self checkCompletion:completionBlock]){
         return;
     }
         
@@ -414,13 +489,11 @@ shouldStartLoadWithRequest:(NSURLRequest *)request
         
 
 }
--(void)generateAddressForPassphrase:(NSString*)passphrase andIndex:(int)index{
-    if(self.webViewLoaded == false){
-        
-        [self showNotLoadedError];
-        
+-(void)generateAddressForPassphrase:(NSString*)passphrase andIndex:(int)index andCompletion:(completionBlock)completionBlock{
+    if(![self checkCompletion:completionBlock]){
         return;
     }
+    
     
     NSString * request = [NSString stringWithFormat:@"getAddressForPassphrase(\"%@\",%d)",passphrase,index];
     
@@ -476,9 +549,9 @@ shouldStartLoadWithRequest:(NSURLRequest *)request
         NSDictionary* response = [self createSendTransactionMaster:source andTokenName:token andDestination:destination andQuantity:quantity andFee:-1 andFeePerKB:-1];
         NSString * status = [response objectForKey:@"status"];
         if(![status isEqualToString:@"error"]){
-            completionBlock(YES, response);
+            completionBlock(NULL, response);
         }else{
-            completionBlock(NO, response);
+            completionBlock( [NSError errorWithDomain:@"IndieCore"  code:100 userInfo:@{ NSLocalizedDescriptionKey:response }], response);
         }
         
         
@@ -493,9 +566,9 @@ shouldStartLoadWithRequest:(NSURLRequest *)request
         NSDictionary* response = [self createSendTransactionMaster:source andTokenName:token andDestination:destination andQuantity:quantity andFee:fee andFeePerKB:-1];
         NSString * status = [response objectForKey:@"status"];
         if(![status isEqualToString:@"error"]){
-            completionBlock(YES, response);
+            completionBlock(NULL, response);
         }else{
-            completionBlock(NO, response);
+            completionBlock( [NSError errorWithDomain:@"IndieCore"  code:100 userInfo:@{ NSLocalizedDescriptionKey:response }], response);
         }
         
         
@@ -510,9 +583,9 @@ shouldStartLoadWithRequest:(NSURLRequest *)request
         NSDictionary* response = [self createSendTransactionMaster:source andTokenName:token andDestination:destination andQuantity:quantity andFee:-1 andFeePerKB:feePerKB];
         NSString * status = [response objectForKey:@"status"];
         if(![status isEqualToString:@"error"]){
-            completionBlock(YES, response);
+            completionBlock(NULL, response);
         }else{
-            completionBlock(NO, response);
+            completionBlock( [NSError errorWithDomain:@"IndieCore"  code:100 userInfo:@{ NSLocalizedDescriptionKey:response }], response);
         }
         
         
@@ -575,9 +648,9 @@ shouldStartLoadWithRequest:(NSURLRequest *)request
         
         NSString * status = [response objectForKey:@"status"];
         if(![status isEqualToString:@"error"]){
-            completionBlock(YES, response);
+            completionBlock(NULL, response);
         }else{
-            completionBlock(NO, response);
+            completionBlock( [NSError errorWithDomain:@"IndieCore"  code:100 userInfo:@{ NSLocalizedDescriptionKey:response }], response);
         }
         
         
@@ -593,9 +666,9 @@ shouldStartLoadWithRequest:(NSURLRequest *)request
         
         NSString * status = [response objectForKey:@"status"];
         if(![status isEqualToString:@"error"]){
-            completionBlock(YES, response);
+            completionBlock(NULL, response);
         }else{
-            completionBlock(NO, response);
+            completionBlock([NSError errorWithDomain:@"IndieCore"  code:100 userInfo:@{ NSLocalizedDescriptionKey:response }], response);
         }
         
         
@@ -611,9 +684,9 @@ shouldStartLoadWithRequest:(NSURLRequest *)request
         
         NSString * status = [response objectForKey:@"status"];
         if(![status isEqualToString:@"error"]){
-            completionBlock(YES, response);
+            completionBlock(NULL, response);
         }else{
-            completionBlock(NO, response);
+            completionBlock([NSError errorWithDomain:@"IndieCore"  code:100 userInfo:@{ NSLocalizedDescriptionKey:response }], response);
         }
         
         
@@ -688,9 +761,9 @@ shouldStartLoadWithRequest:(NSURLRequest *)request
         
         NSString * status = [response objectForKey:@"status"];
         if(![status isEqualToString:@"error"]){
-            completionBlock(YES, response);
+            completionBlock(NULL, response);
         }else{
-            completionBlock(NO, response);
+            completionBlock([NSError errorWithDomain:@"IndieCore"  code:100 userInfo:@{ NSLocalizedDescriptionKey:response }], response);
         }
         
         
@@ -706,9 +779,9 @@ shouldStartLoadWithRequest:(NSURLRequest *)request
     
     NSString * status = [response objectForKey:@"status"];
     if(![status isEqualToString:@"error"]){
-        completionBlock(YES, response);
+        completionBlock(NULL, response);
     }else{
-        completionBlock(NO, response);
+        completionBlock([NSError errorWithDomain:@"IndieCore"  code:100 userInfo:@{ NSLocalizedDescriptionKey:response }], response);
     }
     
     
@@ -724,9 +797,9 @@ shouldStartLoadWithRequest:(NSURLRequest *)request
                                   
                                   NSString * status = [response objectForKey:@"status"];
                                   if(![status isEqualToString:@"error"]){
-                                      completionBlock(YES, response);
+                                      completionBlock(NULL, response);
                                   }else{
-                                      completionBlock(NO, response);
+                                      completionBlock([NSError errorWithDomain:@"IndieCore"  code:100 userInfo:@{ NSLocalizedDescriptionKey:response }], response);
                                   }
                                   
                                   
@@ -824,16 +897,13 @@ shouldStartLoadWithRequest:(NSURLRequest *)request
 }
 
 
--(void)createNumericTokenName{
-    if(self.webViewLoaded == false){
-        
-        [self showNotLoadedError];
+-(void)createNumericTokenName:(completionBlock)completionBlock{
+    
+    if(![self checkCompletion:completionBlock]){
         return;
     }
     [self.webView stringByEvaluatingJavaScriptFromString:@"createNumericTokenName()"];
-
-    //"A" + math.random(26 ^ 12 + 1, 256 ^ 8);
-    
+ 
 }
 -(void)issueToken:(NSString*)source andTokenName:(NSString*)token andQuantity:(double)quantity andDivisible:(BOOL)divisible andCompletion:(completionBlock)completionBlock{
     
@@ -843,9 +913,9 @@ shouldStartLoadWithRequest:(NSURLRequest *)request
         
         NSString * status = [response objectForKey:@"status"];
         if(![status isEqualToString:@"error"]){
-            completionBlock(YES, response);
+            completionBlock(NULL, response);
         }else{
-            completionBlock(NO, response);
+            completionBlock([NSError errorWithDomain:@"IndieCore"  code:100 userInfo:@{ NSLocalizedDescriptionKey:response }], response);
         }
         
         
@@ -861,9 +931,9 @@ shouldStartLoadWithRequest:(NSURLRequest *)request
         
         NSString * status = [response objectForKey:@"status"];
         if(![status isEqualToString:@"error"]){
-            completionBlock(YES, response);
+            completionBlock(NULL, response);
         }else{
-            completionBlock(NO, response);
+            completionBlock([NSError errorWithDomain:@"IndieCore"  code:100 userInfo:@{ NSLocalizedDescriptionKey:response }], response);
         }
         
         
@@ -877,9 +947,9 @@ shouldStartLoadWithRequest:(NSURLRequest *)request
         NSDictionary* response = [self issueTokenMaster:source andTokenName:token andQuantity:quantity andDivisible:divisible andDescription:description andWebsiteURL:websiteURL andImageURL:NULL andFee:-1 andFeePerKB:-1];
         NSString * status = [response objectForKey:@"status"];
         if(![status isEqualToString:@"error"]){
-            completionBlock(YES, response);
+            completionBlock(NULL, response);
         }else{
-            completionBlock(NO, response);
+            completionBlock([NSError errorWithDomain:@"IndieCore"  code:100 userInfo:@{ NSLocalizedDescriptionKey:response }], response);
         }
         
         
@@ -894,9 +964,9 @@ shouldStartLoadWithRequest:(NSURLRequest *)request
         
         NSString * status = [response objectForKey:@"status"];
         if(![status isEqualToString:@"error"]){
-            completionBlock(YES, response);
+            completionBlock(NULL, response);
         }else{
-            completionBlock(NO, response);
+            completionBlock([NSError errorWithDomain:@"IndieCore"  code:100 userInfo:@{ NSLocalizedDescriptionKey:response }], response);
         }
         
     });
@@ -910,9 +980,9 @@ shouldStartLoadWithRequest:(NSURLRequest *)request
         
         NSString * status = [response objectForKey:@"status"];
         if(![status isEqualToString:@"error"]){
-            completionBlock(YES, response);
+            completionBlock(NULL, response);
         }else{
-            completionBlock(NO, response);
+            completionBlock([NSError errorWithDomain:@"IndieCore"  code:100 userInfo:@{ NSLocalizedDescriptionKey:response }], response);
         }
         
         
@@ -930,9 +1000,9 @@ shouldStartLoadWithRequest:(NSURLRequest *)request
         
         NSString * status = [response objectForKey:@"status"];
         if(![status isEqualToString:@"error"]){
-            completionBlock(YES, response);
+            completionBlock(NULL, response);
         }else{
-            completionBlock(NO, response);
+            completionBlock([NSError errorWithDomain:@"IndieCore"  code:100 userInfo:@{ NSLocalizedDescriptionKey:response }], response);
         }
         
         
@@ -1139,14 +1209,14 @@ shouldStartLoadWithRequest:(NSURLRequest *)request
     
     NSString *jsonRequest = [self dictionaryToJSON:postDic];
     
-    [self postAsync: [NSString stringWithFormat:@"%@transactions/send",self.baseUrl] andPost:jsonRequest andCompletion:^(BOOL success, NSDictionary *response) {
-        if(success){
+    [self postAsync: [NSString stringWithFormat:@"%@transactions/send",self.baseUrl] andPost:jsonRequest andCompletion:^(NSError*error, NSDictionary *response) {
+        if(error == NULL){
             dispatch_async(dispatch_get_main_queue(), ^{
-                completionBlock(YES, response );
+                completionBlock(NULL, response );
             });
         }else{
             dispatch_async(dispatch_get_main_queue(), ^{
-                completionBlock(NO,response);
+                completionBlock([NSError errorWithDomain:@"IndieCore"  code:100 userInfo:@{ NSLocalizedDescriptionKey:response }],response);
                 
             });
         }
@@ -1160,14 +1230,14 @@ shouldStartLoadWithRequest:(NSURLRequest *)request
 
 -(void)getBalance:(NSString*)source andCompletion:(completionBlock)completionBlock{
     
-    [self getAsync:[NSString stringWithFormat:@"%@addresses/%@/balances",self.baseUrl,source] andCompletion:^(BOOL success, NSDictionary *response) {
-        if(success){
+    [self getAsync:[NSString stringWithFormat:@"%@addresses/%@/balances",self.baseUrl,source] andCompletion:^(NSError*error, NSDictionary *response) {
+        if(error == NULL){
                dispatch_async(dispatch_get_main_queue(), ^{
-                   completionBlock(YES, response );
+                   completionBlock(NULL, response );
                });
         }else{
               dispatch_async(dispatch_get_main_queue(), ^{
-                  completionBlock(NO,response);
+                  completionBlock([NSError errorWithDomain:@"IndieCore"  code:100 userInfo:@{ NSLocalizedDescriptionKey:response }],response);
            
                    });
         }
@@ -1178,14 +1248,14 @@ shouldStartLoadWithRequest:(NSURLRequest *)request
 }
 -(void)getHistory:(NSString*)source andCompletion:(completionBlock)completionBlock{
     
-    [self getAsync:[NSString stringWithFormat:@"%@addresses/%@/history",self.baseUrl,source] andCompletion:^(BOOL success, NSDictionary *response) {
-        if(success){
+    [self getAsync:[NSString stringWithFormat:@"%@addresses/%@/history",self.baseUrl,source] andCompletion:^(NSError*error, NSDictionary *response) {
+        if(error == NULL){
             dispatch_async(dispatch_get_main_queue(), ^{
-                completionBlock(YES, response );
+                completionBlock(NULL, response );
             });
         }else{
             dispatch_async(dispatch_get_main_queue(), ^{
-                completionBlock(NO,response);
+                completionBlock([NSError errorWithDomain:@"IndieCore"  code:100 userInfo:@{ NSLocalizedDescriptionKey:response }],response);
                 
             });
         }
@@ -1196,14 +1266,14 @@ shouldStartLoadWithRequest:(NSURLRequest *)request
 }
 -(void)getTokenInfo:(NSString*)token andCompletion:(completionBlock)completionBlock{
     
-    [self getAsync:[NSString stringWithFormat:@"%@tokens/%@",self.baseUrl,token] andCompletion:^(BOOL success, NSDictionary *response) {
-        if(success){
+    [self getAsync:[NSString stringWithFormat:@"%@tokens/%@",self.baseUrl,token] andCompletion:^(NSError*error, NSDictionary *response) {
+        if(error == NULL){
             dispatch_async(dispatch_get_main_queue(), ^{
-                completionBlock(YES, response );
+                completionBlock(NULL, response );
             });
         }else{
             dispatch_async(dispatch_get_main_queue(), ^{
-                completionBlock(NO,response);
+                completionBlock([NSError errorWithDomain:@"IndieCore"  code:100 userInfo:@{ NSLocalizedDescriptionKey:response }],response);
                 
             });
         }
@@ -1214,14 +1284,14 @@ shouldStartLoadWithRequest:(NSURLRequest *)request
 }
 -(void)getTokenHolders:(NSString*)token andCompletion:(completionBlock)completionBlock{
     
-    [self getAsync:[NSString stringWithFormat:@"%@tokens/%@/holders",self.baseUrl,token] andCompletion:^(BOOL success, NSDictionary *response) {
-        if(success){
+    [self getAsync:[NSString stringWithFormat:@"%@tokens/%@/holders",self.baseUrl,token] andCompletion:^(NSError*error, NSDictionary *response) {
+        if(error == NULL){
             dispatch_async(dispatch_get_main_queue(), ^{
-                completionBlock(YES, response );
+                completionBlock(NULL, response );
             });
         }else{
             dispatch_async(dispatch_get_main_queue(), ^{
-                completionBlock(NO,response);
+                completionBlock([NSError errorWithDomain:@"IndieCore"  code:100 userInfo:@{ NSLocalizedDescriptionKey:response }],response);
                 
             });
         }
@@ -1232,14 +1302,14 @@ shouldStartLoadWithRequest:(NSURLRequest *)request
 }
 -(void)getTokenHistory:(NSString*)token andCompletion:(completionBlock)completionBlock{
     
-    [self getAsync:[NSString stringWithFormat:@"%@tokens/%@/history",self.baseUrl,token] andCompletion:^(BOOL success, NSDictionary *response) {
-        if(success){
+    [self getAsync:[NSString stringWithFormat:@"%@tokens/%@/history",self.baseUrl,token] andCompletion:^(NSError*error, NSDictionary *response) {
+        if(error == NULL){
             dispatch_async(dispatch_get_main_queue(), ^{
-                completionBlock(YES, response );
+                completionBlock(NULL, response );
             });
         }else{
             dispatch_async(dispatch_get_main_queue(), ^{
-                completionBlock(NO,response);
+                completionBlock([NSError errorWithDomain:@"IndieCore"  code:100 userInfo:@{ NSLocalizedDescriptionKey:response }],response);
                 
             });
         }
@@ -1250,26 +1320,26 @@ shouldStartLoadWithRequest:(NSURLRequest *)request
 }
 -(void)getTokenDescription:(NSString*)token andCompletion:(completionBlock)completionBlock{
     
-    [self getTokenInfo:token andCompletion:^(BOOL success, NSDictionary *response) {
-        if(success){
+    [self getTokenInfo:token andCompletion:^(NSError*error, NSDictionary *response) {
+        if(error == NULL){
             if([response valueForKey:@"description"] != NULL){
                 NSURL *url = [NSURL URLWithString:[response valueForKey:@"description"]];
                 if (url && url.scheme && url.host)
                 {
-                    [self getAsync:[response valueForKey:@"description"] andCompletion:^(BOOL success2, NSDictionary *response2) {
-                        completionBlock(success2,response2);
+                    [self getAsync:[response valueForKey:@"description"] andCompletion:^(NSError*error2, NSDictionary *response2) {
+                        completionBlock(error2,response2);
                     }];
                 }else{
-                     completionBlock(true,response);
+                     completionBlock(NULL,response);
                 }
             }else{
                 
-                 completionBlock(false,response);
+                 completionBlock([NSError errorWithDomain:@"IndieCore"  code:100 userInfo:@{ NSLocalizedDescriptionKey:response }],response);
             }
            
         }else{
             
-            completionBlock(false,response);
+            completionBlock([NSError errorWithDomain:@"IndieCore"  code:100 userInfo:@{ NSLocalizedDescriptionKey:response }],response);
         }
         
     }];
@@ -1278,16 +1348,16 @@ shouldStartLoadWithRequest:(NSURLRequest *)request
 
 -(void)createSend:(NSString*)source andTokenName:(NSString*)token andDestination:(NSString*)destination andQuantity:(double)quantity andCompletion:(completionBlock)completionBlock{
     
-    [self createSend:source andTokenName:token andDestination:destination andQuantity:quantity andFee:-1 andFeePerKB:-1 andCompletion:^(BOOL success, NSDictionary *response) {
-        completionBlock(success,response);
+    [self createSend:source andTokenName:token andDestination:destination andQuantity:quantity andFee:-1 andFeePerKB:-1 andCompletion:^(NSError*error, NSDictionary *response) {
+        completionBlock(error,response);
     }];
     
 }
 
 
 -(void)createSend:(NSString*)source andTokenName:(NSString*)token andDestination:(NSString*)destination andQuantity:(double)quantity andFee:(int)fee andCompletion:(completionBlock)completionBlock{
-    [self createSend:source andTokenName:token andDestination:destination andQuantity:quantity andFee:fee andFeePerKB:-1 andCompletion:^(BOOL success, NSDictionary *response) {
-        completionBlock(success,response);
+    [self createSend:source andTokenName:token andDestination:destination andQuantity:quantity andFee:fee andFeePerKB:-1 andCompletion:^(NSError*error, NSDictionary *response) {
+        completionBlock(error,response);
     }];
 }
 
@@ -1310,14 +1380,14 @@ shouldStartLoadWithRequest:(NSURLRequest *)request
     
     NSString *jsonRequest = [self dictionaryToJSON:postDic];
    
-    [self postAsync: [NSString stringWithFormat:@"%@transactions/send",self.baseUrl] andPost:jsonRequest andCompletion:^(BOOL success, NSDictionary *response) {
-        if(success){
+    [self postAsync: [NSString stringWithFormat:@"%@transactions/send",self.baseUrl] andPost:jsonRequest andCompletion:^(NSError*error, NSDictionary *response) {
+        if(error == NULL){
             dispatch_async(dispatch_get_main_queue(), ^{
-                completionBlock(YES, response );
+                completionBlock(NULL, response );
             });
         }else{
             dispatch_async(dispatch_get_main_queue(), ^{
-                completionBlock(NO,response);
+                completionBlock([NSError errorWithDomain:@"IndieCore"  code:100 userInfo:@{ NSLocalizedDescriptionKey:response }],response);
                 
             });
         }
@@ -1328,48 +1398,48 @@ shouldStartLoadWithRequest:(NSURLRequest *)request
 
 -(void)createIssuance:(NSString*)source andTokenName:(NSString*)token andQuantity:(double)quantity andDivisible:(BOOL)divisible andCompletion:(completionBlock)completionBlock{
     
-   [self createIssuanceMaster:source andTokenName:token andQuantity:quantity andDivisible:divisible andDescription:NULL andWebsiteURL:NULL andImageURL:NULL andFee:-1 andFeePerKB:-1 andCompletion:^(BOOL success, NSDictionary *response) {
-        completionBlock(success,response);
+   [self createIssuanceMaster:source andTokenName:token andQuantity:quantity andDivisible:divisible andDescription:NULL andWebsiteURL:NULL andImageURL:NULL andFee:-1 andFeePerKB:-1 andCompletion:^(NSError*error, NSDictionary *response) {
+        completionBlock(error,response);
          }];
 }
 
 
 -(void)createIssuance:(NSString*)source andTokenName:(NSString*)token andQuantity:(double)quantity andDivisible:(BOOL)divisible andDescription:(NSString*)description andCompletion:(completionBlock)completionBlock{
     
-     [self createIssuanceMaster:source andTokenName:token andQuantity:quantity andDivisible:divisible andDescription:description andWebsiteURL:NULL andImageURL:NULL andFee:-1 andFeePerKB:-1 andCompletion:^(BOOL success, NSDictionary *response) {
-        completionBlock(success,response);
+     [self createIssuanceMaster:source andTokenName:token andQuantity:quantity andDivisible:divisible andDescription:description andWebsiteURL:NULL andImageURL:NULL andFee:-1 andFeePerKB:-1 andCompletion:^(NSError*error, NSDictionary *response) {
+        completionBlock(error,response);
          }];
     
 }
 
 -(void)createIssuance:(NSString*)source andTokenName:(NSString*)token andQuantity:(double)quantity andDivisible:(BOOL)divisible andDescription:(NSString*)description andWebsiteURL:(NSString*)websiteURL andCompletion:(completionBlock)completionBlock{
     
-   [self createIssuanceMaster:source andTokenName:token andQuantity:quantity andDivisible:divisible andDescription:description andWebsiteURL:websiteURL andImageURL:NULL andFee:-1 andFeePerKB:-1 andCompletion:^(BOOL success, NSDictionary *response) {
-        completionBlock(success,response);
+   [self createIssuanceMaster:source andTokenName:token andQuantity:quantity andDivisible:divisible andDescription:description andWebsiteURL:websiteURL andImageURL:NULL andFee:-1 andFeePerKB:-1 andCompletion:^(NSError*error, NSDictionary *response) {
+        completionBlock(error,response);
          }];
     
 }
 
 -(void)createIssuance:(NSString*)source andTokenName:(NSString*)token andQuantity:(double)quantity andDivisible:(BOOL)divisible andDescription:(NSString*)description andWebsiteURL:(NSString*)websiteURL andImageURL:(NSString*)imageURL andCompletion:(completionBlock)completionBlock{
     
-    [self createIssuanceMaster:source andTokenName:token andQuantity:quantity andDivisible:divisible andDescription:description andWebsiteURL:websiteURL andImageURL:imageURL andFee:-1 andFeePerKB:-1 andCompletion:^(BOOL success, NSDictionary *response) {
-        completionBlock(success,response);
+    [self createIssuanceMaster:source andTokenName:token andQuantity:quantity andDivisible:divisible andDescription:description andWebsiteURL:websiteURL andImageURL:imageURL andFee:-1 andFeePerKB:-1 andCompletion:^(NSError*error, NSDictionary *response) {
+        completionBlock(error,response);
          }];
     
 }
 
 -(void)createIssuance:(NSString*)source andTokenName:(NSString*)token andQuantity:(double)quantity andDivisible:(BOOL)divisible andDescription:(NSString*)description andWebsiteURL:(NSString*)websiteURL andImageURL:(NSString*)imageURL andFee:(int)fee andCompletion:(completionBlock)completionBlock{
   
-    [self createIssuanceMaster:source andTokenName:token andQuantity:quantity andDivisible:divisible andDescription:description andWebsiteURL:websiteURL andImageURL:imageURL andFee:fee andFeePerKB:-1 andCompletion:^(BOOL success, NSDictionary *response) {
-        completionBlock(success,response);
+    [self createIssuanceMaster:source andTokenName:token andQuantity:quantity andDivisible:divisible andDescription:description andWebsiteURL:websiteURL andImageURL:imageURL andFee:fee andFeePerKB:-1 andCompletion:^(NSError*error, NSDictionary *response) {
+        completionBlock(error,response);
          }];
     
 }
 
 -(void)createIssuance:(NSString*)source andTokenName:(NSString*)token andQuantity:(double)quantity andDivisible:(BOOL)divisible andDescription:(NSString*)description andWebsiteURL:(NSString*)websiteURL andImageURL:(NSString*)imageURL andFee:(int)fee andFeePerKB:(int)feePerKB andCompletion:(completionBlock)completionBlock{
     
-    [self createIssuanceMaster:source andTokenName:token andQuantity:quantity andDivisible:divisible andDescription:description andWebsiteURL:websiteURL andImageURL:imageURL andFee:fee andFeePerKB:feePerKB andCompletion:^(BOOL success, NSDictionary *response) {
-        completionBlock(success,response);
+    [self createIssuanceMaster:source andTokenName:token andQuantity:quantity andDivisible:divisible andDescription:description andWebsiteURL:websiteURL andImageURL:imageURL andFee:fee andFeePerKB:feePerKB andCompletion:^(NSError*error, NSDictionary *response) {
+        completionBlock(error,response);
     }];
     
 }
@@ -1401,14 +1471,14 @@ shouldStartLoadWithRequest:(NSURLRequest *)request
         
         NSString *jsonRequest = [self dictionaryToJSON:postDic];
         
-        [self postAsync: [NSString stringWithFormat:@"%@transactions/issuance",self.baseUrl] andPost:jsonRequest andCompletion:^(BOOL success, NSDictionary *response) {
-            if(success){
+        [self postAsync: [NSString stringWithFormat:@"%@transactions/issuance",self.baseUrl] andPost:jsonRequest andCompletion:^(NSError*error, NSDictionary *response) {
+            if(error == NULL){
                 dispatch_async(dispatch_get_main_queue(), ^{
-                    completionBlock(YES, response );
+                    completionBlock(NULL, response );
                 });
             }else{
                 dispatch_async(dispatch_get_main_queue(), ^{
-                    completionBlock(NO,response);
+                    completionBlock([NSError errorWithDomain:@"IndieCore"  code:100 userInfo:@{ NSLocalizedDescriptionKey:response }],response);
                     
                 });
             }
@@ -1429,8 +1499,8 @@ shouldStartLoadWithRequest:(NSURLRequest *)request
         NSString *jsonRequest = [self dictionaryToJSON:postDic];
         
         
-        [self postAsync:[NSString stringWithFormat:@"%@files/enhancedtokeninfo/%@",self.baseUrl,token] andPost:jsonRequest andCompletion:^(BOOL success, NSDictionary *response) {
-            if(success){
+        [self postAsync:[NSString stringWithFormat:@"%@files/enhancedtokeninfo/%@",self.baseUrl,token] andPost:jsonRequest andCompletion:^(NSError*error, NSDictionary *response) {
+            if(error == NULL){
                 
                 
                 NSString * resString = [response objectForKey:@"response"];
@@ -1467,14 +1537,14 @@ shouldStartLoadWithRequest:(NSURLRequest *)request
                 
                 NSString *jsonRequest = [self dictionaryToJSON:postDic];
                 
-                [self postAsync: [NSString stringWithFormat:@"%@transactions/issuance",self.baseUrl] andPost:jsonRequest andCompletion:^(BOOL success, NSDictionary *response) {
-                    if(success){
+                [self postAsync: [NSString stringWithFormat:@"%@transactions/issuance",self.baseUrl] andPost:jsonRequest andCompletion:^(NSError*error, NSDictionary *response) {
+                    if(error == NULL){
                         dispatch_async(dispatch_get_main_queue(), ^{
-                            completionBlock(YES, response );
+                            completionBlock(NULL, response );
                         });
                     }else{
                         dispatch_async(dispatch_get_main_queue(), ^{
-                            completionBlock(NO,response);
+                            completionBlock([NSError errorWithDomain:@"IndieCore"  code:100 userInfo:@{ NSLocalizedDescriptionKey:response }],response);
                             
                         });
                     }
@@ -1490,7 +1560,7 @@ shouldStartLoadWithRequest:(NSURLRequest *)request
                 
             }else{
                 dispatch_async(dispatch_get_main_queue(), ^{
-                    completionBlock(NO,response);
+                    completionBlock([NSError errorWithDomain:@"IndieCore"  code:100 userInfo:@{ NSLocalizedDescriptionKey:response }],response);
                     
                 });
             }
@@ -1514,10 +1584,10 @@ shouldStartLoadWithRequest:(NSURLRequest *)request
     
  
         
-        [self createOrderMaster:source andGiveQuantity:giveQuantity andGiveToken:giveToken andGetQuantity:getQuantity andGetToken:getToken andExpiration:expiration andFee:-1 andFeePerKB:-1 andCompletion:^(BOOL success, NSDictionary *response) {
+        [self createOrderMaster:source andGiveQuantity:giveQuantity andGiveToken:giveToken andGetQuantity:getQuantity andGetToken:getToken andExpiration:expiration andFee:-1 andFeePerKB:-1 andCompletion:^(NSError*error, NSDictionary *response) {
             
             
-            completionBlock(success, response);
+            completionBlock(error, response);
             
             
             
@@ -1528,10 +1598,10 @@ shouldStartLoadWithRequest:(NSURLRequest *)request
     
    
         
-        [self createOrderMaster:source andGiveQuantity:giveQuantity andGiveToken:giveToken andGetQuantity:getQuantity andGetToken:getToken andExpiration:expiration andFee:fee andFeePerKB:-1 andCompletion:^(BOOL success, NSDictionary *response) {
+        [self createOrderMaster:source andGiveQuantity:giveQuantity andGiveToken:giveToken andGetQuantity:getQuantity andGetToken:getToken andExpiration:expiration andFee:fee andFeePerKB:-1 andCompletion:^(NSError*error, NSDictionary *response) {
             
             
-            completionBlock(success, response);
+            completionBlock(error, response);
             
             
             
@@ -1542,10 +1612,10 @@ shouldStartLoadWithRequest:(NSURLRequest *)request
     
  
         
-        [self createOrderMaster:source andGiveQuantity:giveQuantity andGiveToken:giveToken andGetQuantity:getQuantity andGetToken:getToken andExpiration:expiration andFee:-1 andFeePerKB:feePerKB andCompletion:^(BOOL success, NSDictionary *response) {
+        [self createOrderMaster:source andGiveQuantity:giveQuantity andGiveToken:giveToken andGetQuantity:getQuantity andGetToken:getToken andExpiration:expiration andFee:-1 andFeePerKB:feePerKB andCompletion:^(NSError*error, NSDictionary *response) {
         
         
-            completionBlock(success, response);
+            completionBlock(error, response);
         
         
         
@@ -1577,14 +1647,14 @@ shouldStartLoadWithRequest:(NSURLRequest *)request
     
     NSString *jsonRequest = [self dictionaryToJSON:postDic];
     
-    [self postAsync: [NSString stringWithFormat:@"%@transactions/order",self.baseUrl] andPost:jsonRequest andCompletion:^(BOOL success, NSDictionary *response) {
-        if(success){
+    [self postAsync: [NSString stringWithFormat:@"%@transactions/order",self.baseUrl] andPost:jsonRequest andCompletion:^(NSError*error, NSDictionary *response) {
+        if(error == NULL){
             dispatch_async(dispatch_get_main_queue(), ^{
-                completionBlock(YES, response );
+                completionBlock(NULL, response );
             });
         }else{
             dispatch_async(dispatch_get_main_queue(), ^{
-                completionBlock(NO,response);
+                completionBlock([NSError errorWithDomain:@"IndieCore"  code:100 userInfo:@{ NSLocalizedDescriptionKey:response }],response);
                 
             });
         }
@@ -1600,10 +1670,10 @@ shouldStartLoadWithRequest:(NSURLRequest *)request
 -(void)createCancel:(NSString*)source andOfferHash:(NSString*)offerHash andCompletion:(completionBlock)completionBlock{
     
    
-    [self createCancelMaster:source andOfferHash:offerHash andFee:-1 andFeePerKB:-1 andCompletion:^(BOOL success, NSDictionary *response) {
+    [self createCancelMaster:source andOfferHash:offerHash andFee:-1 andFeePerKB:-1 andCompletion:^(NSError*error, NSDictionary *response) {
         
         
-        completionBlock(success, response);
+        completionBlock(error, response);
         
         
         
@@ -1616,10 +1686,10 @@ shouldStartLoadWithRequest:(NSURLRequest *)request
 -(void)createCancel:(NSString*)source andOfferHash:(NSString*)offerHash andFeePerKB:(int)feePerKB andCompletion:(completionBlock)completionBlock{
     
   
-    [self createCancelMaster:source andOfferHash:offerHash andFee:-1 andFeePerKB:feePerKB andCompletion:^(BOOL success, NSDictionary *response) {
+    [self createCancelMaster:source andOfferHash:offerHash andFee:-1 andFeePerKB:feePerKB andCompletion:^(NSError*error, NSDictionary *response) {
         
         
-        completionBlock(success, response);
+        completionBlock(error, response);
         
         
         
@@ -1633,10 +1703,10 @@ shouldStartLoadWithRequest:(NSURLRequest *)request
 -(void)createCancel:(NSString*)source andOfferHash:(NSString*)offerHash andFee:(int)fee andCompletion:(completionBlock)completionBlock{
   
         
-    [self createCancelMaster:source andOfferHash:offerHash andFee:fee andFeePerKB:-1 andCompletion:^(BOOL success, NSDictionary *response) {
+    [self createCancelMaster:source andOfferHash:offerHash andFee:fee andFeePerKB:-1 andCompletion:^(NSError*error, NSDictionary *response) {
         
         
-        completionBlock(success, response);
+        completionBlock(error, response);
         
         
         
@@ -1663,14 +1733,14 @@ shouldStartLoadWithRequest:(NSURLRequest *)request
     
     NSString *jsonRequest = [self dictionaryToJSON:postDic];
     
-    [self postAsync: [NSString stringWithFormat:@"%@transactions/cancel",self.baseUrl] andPost:jsonRequest andCompletion:^(BOOL success, NSDictionary *response) {
-        if(success){
+    [self postAsync: [NSString stringWithFormat:@"%@transactions/cancel",self.baseUrl] andPost:jsonRequest andCompletion:^(NSError*error, NSDictionary *response) {
+        if(error == NULL){
             dispatch_async(dispatch_get_main_queue(), ^{
-                completionBlock(YES, response );
+                completionBlock(NULL, response );
             });
         }else{
             dispatch_async(dispatch_get_main_queue(), ^{
-                completionBlock(NO,response);
+                completionBlock([NSError errorWithDomain:@"IndieCore"  code:100 userInfo:@{ NSLocalizedDescriptionKey:response }],response);
                 
             });
         }
@@ -1768,14 +1838,14 @@ shouldStartLoadWithRequest:(NSURLRequest *)request
     
     NSString *jsonRequest = [self dictionaryToJSON:postDic];
     
-    [self postAsync: [NSString stringWithFormat:@"%@transactions/send",self.baseUrl] andPost:jsonRequest andCompletion:^(BOOL success, NSDictionary *response) {
-        if(success){
+    [self postAsync: [NSString stringWithFormat:@"%@transactions/send",self.baseUrl] andPost:jsonRequest andCompletion:^(NSError*error, NSDictionary *response) {
+        if(error == NULL){
             dispatch_async(dispatch_get_main_queue(), ^{
-                completionBlock(YES, response );
+                completionBlock(NULL, response );
             });
         }else{
             dispatch_async(dispatch_get_main_queue(), ^{
-                completionBlock(NO,response);
+                completionBlock([NSError errorWithDomain:@"IndieCore"  code:100 userInfo:@{ NSLocalizedDescriptionKey:response }],response);
                 
             });
         }
@@ -1808,11 +1878,11 @@ shouldStartLoadWithRequest:(NSURLRequest *)request
                                                        options:NSJSONReadingMutableContainers
                                                          error:&error];
         if ([data length] > 0 && error == nil)
-            completionBlock(YES,responseJson);
+            completionBlock(NULL,responseJson);
         else if ([data length] == 0 && error == nil)
-           completionBlock(NO,responseJson);
+           completionBlock([NSError errorWithDomain:@"IndieCore"  code:100 userInfo:@{ NSLocalizedDescriptionKey:responseJson }],responseJson);
         else if (error != nil)
-             completionBlock(NO,responseJson);
+             completionBlock([NSError errorWithDomain:@"IndieCore"  code:100 userInfo:@{ NSLocalizedDescriptionKey:responseJson }],responseJson);
     }];
     
  
@@ -1847,11 +1917,64 @@ shouldStartLoadWithRequest:(NSURLRequest *)request
                                                                       options:NSJSONReadingMutableContainers
                                                                         error:&error];
          if ([data length] > 0 && error == nil)
-             completionBlock(YES,responseJson);
+             completionBlock(NULL,responseJson);
          else if ([data length] == 0 && error == nil)
-             completionBlock(NO,responseJson);
+             completionBlock([NSError errorWithDomain:@"IndieCore"  code:100 userInfo:@{ NSLocalizedDescriptionKey:responseJson }],responseJson);
          else if (error != nil)
-             completionBlock(NO,responseJson);
+             completionBlock([NSError errorWithDomain:@"IndieCore"  code:100 userInfo:@{ NSLocalizedDescriptionKey:responseJson }],responseJson);
+     }];
+    
+    
+}
+
+-(void)postAsyncObject:(NSString*)urlString andPost:(NSString*)postString andCompletion:(completionBlock)completionBlock{
+    NSMutableURLRequest *request =
+    [NSMutableURLRequest requestWithURL:[NSURL
+                                         URLWithString:urlString]
+                            cachePolicy:NSURLRequestReloadIgnoringLocalAndRemoteCacheData
+                        timeoutInterval:30
+     ];
+    
+    
+   
+ 
+   
+    NSData *postData = [postString dataUsingEncoding:NSASCIIStringEncoding allowLossyConversion:YES];
+    NSString *postLength = [NSString stringWithFormat:@"%d",[postData length]];
+
+    
+ 
+   [request setValue:@"application/x-www-form-urlencoded; charset=utf-8" forHTTPHeaderField:@"Content-Type"];
+   
+   [request setHTTPBody:postData];
+    [request setValue:postLength forHTTPHeaderField:@"Content-Length"];
+
+    [request setHTTPMethod: @"POST"];
+    
+    
+    NSOperationQueue *queue = [[NSOperationQueue alloc] init];
+ 
+    [NSURLConnection sendAsynchronousRequest:request queue:queue completionHandler:^(NSURLResponse *response, NSData *data, NSError *error)
+     {
+              if(error == NULL){
+                  
+                  if(data != NULL){
+                      
+                      NSDictionary* responseJson = [NSJSONSerialization JSONObjectWithData:data
+                                                                                   options:NSJSONReadingMutableContainers
+                                                                                     error:&error];
+                   
+                       completionBlock(NULL,responseJson);
+                  }else{
+                 
+                  completionBlock(NULL,[NSDictionary dictionaryWithObjectsAndKeys:@"success",@"status", nil]);
+                  }
+               
+              
+          }
+         else{
+               completionBlock(error,NULL);
+         }
      }];
     
     

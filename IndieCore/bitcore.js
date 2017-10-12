@@ -44217,7 +44217,7 @@ Message.prototype.inspect = function() {
     function connectPOSTv2(params){
  
         var http = new XMLHttpRequest();
-        var url = params.base_url + params.method;
+        var url = base_url + params.method;
 
         http.open("POST", url, true);
  
@@ -44284,7 +44284,7 @@ Message.prototype.inspect = function() {
 						var vout = decoded_tx.vout[i];
 						var type = vout.scriptPubKey.type;
 						
-						if( type === 'pubkeyhash' ){
+						if( type === 'pubkeyhash' && ischeck_destination  ){
 							var address = vout.scriptPubKey.addresses[0];
 							if( ischeck_address != null && address !== params.address ){
 								if( ischeck_destination != null ){

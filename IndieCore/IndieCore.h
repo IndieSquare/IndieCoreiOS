@@ -23,7 +23,7 @@
 - (void)createWalletError:(NSString*)errorMessage;
 - (void)didInitiateCore:(NSString*)message;
 - (void)didCheckAddressValid:(BOOL)isValid;
-- (void)didGenerateRandomDetailedWallet:(NSString*)privateKey andWif:(NSString*)wif andPublicKey:(NSString*)publicKey andAddress:(NSString*)address;
+- (void)didGenerateRandomDetailedWallet;
 - (void)didCreateNumericTokenName:(NSString*)tokenName;
 -(void)didGetBalance:(NSDictionary*)balance;
 -(void)didGetBalanceError:(NSString*)error;
@@ -33,15 +33,15 @@
 
 @interface IndieCore : NSObject<UIWebViewDelegate>
 
-typedef void (^completionBlock)(BOOL success, NSDictionary *response);
+typedef void (^completionBlock)(NSError* error, NSDictionary *response);
 
--(id)initWithViewController:(UIViewController*)parentController andAPIKey:(NSString*)apiKey andTestNet:(bool)testnet;
--(void)signTransacation:(NSString*)tx andPassphrase:(NSString*)passphrase andIndex:(int)index andDestination:(NSString*)destination;
--(void)signTransacation:(NSString*)tx andPassphrase:(NSString*)passphrase andIndex:(int)index;
--(void)createNewWallet;
--(void)generateAddressForPassphrase:(NSString*)passphrase andIndex:(int)index;
--(void)generateRandomDetailedWallet;
--(void)checkIfAddressIsValid:(NSString*)passphrase;
+-(id)initWithViewController:(UIViewController*)parentController andAPIKey:(NSString*)apiKey andTestNet:(bool)testnet andCompletion:(completionBlock)completionBlock;
+-(void)signTransacation:(NSString*)tx andPassphrase:(NSString*)passphrase andIndex:(int)index andDestination:(NSString*)destination andCompletion:(completionBlock)completionBlock;
+-(void)signTransacation:(NSString*)tx andPassphrase:(NSString*)passphrase andIndex:(int)index andCompletion:(completionBlock)completionBlock;
+-(void)createNewWallet:(completionBlock)completionBlock;
+-(void)generateAddressForPassphrase:(NSString*)passphrase andIndex:(int)index andCompletion:(completionBlock)completionBlock;
+-(void)generateRandomDetailedWallet:(completionBlock)completionBlock;
+-(void)checkIfAddressIsValid:(NSString*)passphrase andCompletion:(completionBlock)completionBlock;
 
 -(void)verifyMessage:(NSString*)message andSignature:(NSString*)signature andAddress:(NSString*)address andCompletion:(completionBlock)completionBlock;
 -(void)signMessage:(NSString*)message andPassphrase:(NSString*)passphrase andIndex:(int)index andCompletion:(completionBlock)completionBlock;
@@ -50,7 +50,7 @@ typedef void (^completionBlock)(BOOL success, NSDictionary *response);
 
 -(BOOL)checkIfTokenExists:(NSString*)token;
 
--(void)createNumericTokenName;
+-(void)createNumericTokenName:(completionBlock)completionBlock;
 
 
 
@@ -115,19 +115,39 @@ typedef void (^completionBlock)(BOOL success, NSDictionary *response);
 -(void)createSend:(NSString*)source andTokenName:(NSString*)token andDestination:(NSString*)destination andQuantity:(double)quantity andFee:(int)fee andFeePerKB:(int)feePerKB andCompletion:(completionBlock)completionBlock;
 -(void)createSend:(NSString*)source andTokenName:(NSString*)token andDestination:(NSString*)destination andQuantity:(double)quantity andFee:(int)fee andCompletion:(completionBlock)completionBlock;
 
+-(void)createIssuance:(NSString*)source andTokenName:(NSString*)token andQuantity:(double)quantity andDivisible:(BOOL)divisible andCompletion:(completionBlock)completionBlock;
+-(void)createIssuance:(NSString*)source andTokenName:(NSString*)token andQuantity:(double)quantity andDivisible:(BOOL)divisible andDescription:(NSString*)description andCompletion:(completionBlock)completionBlock;
+-(void)createIssuance:(NSString*)source andTokenName:(NSString*)token andQuantity:(double)quantity andDivisible:(BOOL)divisible andDescription:(NSString*)description andWebsiteURL:(NSString*)websiteURL andCompletion:(completionBlock)completionBlock;
+-(void)createIssuance:(NSString*)source andTokenName:(NSString*)token andQuantity:(double)quantity andDivisible:(BOOL)divisible andDescription:(NSString*)description andWebsiteURL:(NSString*)websiteURL andImageURL:(NSString*)imageURL andCompletion:(completionBlock)completionBlock;
+-(void)createIssuance:(NSString*)source andTokenName:(NSString*)token andQuantity:(double)quantity andDivisible:(BOOL)divisible andDescription:(NSString*)description andWebsiteURL:(NSString*)websiteURL andImageURL:(NSString*)imageURL andFee:(int)fee andCompletion:(completionBlock)completionBlock;
+-(void)createIssuance:(NSString*)source andTokenName:(NSString*)token andQuantity:(double)quantity andDivisible:(BOOL)divisible andDescription:(NSString*)description andWebsiteURL:(NSString*)websiteURL andImageURL:(NSString*)imageURL andFee:(int)fee andFeePerKB:(int)feePerKB andCompletion:(completionBlock)completionBlock;
 
--(void)createIssuance:(NSString*)source andTokenName:(NSString*)token andDestination:(NSString*)destination andQuantity:(double)quantity andFee:(int)fee andFeePerKB:(int)feePerKB andCompletion:(completionBlock)completionBlock;
--(void)createOrder:(NSString*)source andGiveQuantity:(double)giveQuantity andGiveToken:(NSString*)giveToken andGetQuantity:(double)getQuantity andGetToken:(NSString*)getToken andExpiration:(int)expiration andFeePerKB:(int)feePerKB andCompletion:(completionBlock)completionBlock;
+
+-(void)createOrder:(NSString*)source andGiveQuantity:(double)giveQuantity andGiveToken:(NSString*)giveToken andGetQuantity:(double)getQuantity andGetToken:(NSString*)getToken andExpiration:(int)expiration andCompletion:(completionBlock)completionBlock;
+
+-(void)createOrder:(NSString*)source andGiveQuantity:(double)giveQuantity andGiveToken:(NSString*)giveToken andGetQuantity:(double)getQuantity andGetToken:(NSString*)getToken andExpiration:(int)expiration andFee:(int)fee  andCompletion:(completionBlock)completionBlock;
+
+-(void)createOrder:(NSString*)source andGiveQuantity:(double)giveQuantity andGiveToken:(NSString*)giveToken andGetQuantity:(double)getQuantity andGetToken:(NSString*)getToken andExpiration:(int)expiration andFeePerKB:(int)feePerKB   andCompletion:(completionBlock)completionBlock;
+
+-(void)createOrder:(NSString*)source andGiveQuantity:(double)giveQuantity andGiveToken:(NSString*)giveToken andGetQuantity:(double)getQuantity andGetToken:(NSString*)getToken andExpiration:(int)expiration andFee:(int)fee  andFeePerKB:(int)feePerKB andCompletion:(completionBlock)completionBlock;
+
+-(void)createCancel:(NSString*)source andOfferHash:(NSString*)offerHash andCompletion:(completionBlock)completionBlock;
+-(void)createCancel:(NSString*)source andOfferHash:(NSString*)offerHash andFee:(int)fee andCompletion:(completionBlock)completionBlock;
+
 -(void)createCancel:(NSString*)source andOfferHash:(NSString*)offerHash andFeePerKB:(int)feePerKB andCompletion:(completionBlock)completionBlock;
+-(void)createCancel:(NSString*)source andOfferHash:(NSString*)offerHash andFee:(int)fee andFeePerKB:(int)feePerKB andCompletion:(completionBlock)completionBlock;
 
 
 -(void)broadcast:(NSString*)signedTx andCompletion:(completionBlock)completionBlock;
 
+-(void)signTransactionWithWallet:(NSString*)myUrlScheme andTx:(NSString *)unsignedTx andCompletion:(completionBlock)completionBlock;
+-(void)getAddressFromWallet:(NSString*)myUrlScheme andCompletion:(completionBlock)completionBlock;
 
 @property completionBlock currentCompletion;
 @property BOOL testnet;
 @property BOOL isDev;
 @property (nonatomic,strong)NSString*baseUrl;
+@property (nonatomic,strong)NSString*base;
 @property(nonatomic,strong)UIWebView * webView;
 @property(nonatomic,strong)NSString*apiKey;
 @property BOOL webViewLoaded;
