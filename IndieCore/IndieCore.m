@@ -1198,34 +1198,7 @@ shouldStartLoadWithRequest:(NSURLRequest *)request
     
     
 }
-
--(void)broadcastTransaction:(NSString*)signedTx andCompletion:(completionBlock)completionBlock{
-
-    NSArray *objects = [NSArray arrayWithObjects:signedTx, nil];
-    
-    NSArray *keys = [NSArray arrayWithObjects:@"tx", nil];
-    
-    NSDictionary *postDic = [NSDictionary dictionaryWithObjects:objects forKeys:keys];
-    
-    NSString *jsonRequest = [self dictionaryToJSON:postDic];
-    
-    [self postAsync: [NSString stringWithFormat:@"%@transactions/send",self.baseUrl] andPost:jsonRequest andCompletion:^(NSError*error, NSDictionary *response) {
-        if(error == NULL){
-            dispatch_async(dispatch_get_main_queue(), ^{
-                completionBlock(NULL, response );
-            });
-        }else{
-            dispatch_async(dispatch_get_main_queue(), ^{
-                completionBlock([NSError errorWithDomain:@"IndieCore"  code:100 userInfo:@{ NSLocalizedDescriptionKey:response }],response);
-                
-            });
-        }
-        
-    }];
-
-   
-    
-}
+ 
 
 
 -(void)getBalance:(NSString*)source andCompletion:(completionBlock)completionBlock{
@@ -1838,7 +1811,7 @@ shouldStartLoadWithRequest:(NSURLRequest *)request
     
     NSString *jsonRequest = [self dictionaryToJSON:postDic];
     
-    [self postAsync: [NSString stringWithFormat:@"%@transactions/send",self.baseUrl] andPost:jsonRequest andCompletion:^(NSError*error, NSDictionary *response) {
+    [self postAsync: [NSString stringWithFormat:@"%@transactions/broadcast",self.baseUrl] andPost:jsonRequest andCompletion:^(NSError*error, NSDictionary *response) {
         if(error == NULL){
             dispatch_async(dispatch_get_main_queue(), ^{
                 completionBlock(NULL, response );
