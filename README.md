@@ -27,6 +27,7 @@ First initialize IndieCore in your main viewcontroller and wait for callback
 
  ```
 Create a send transaction
+
 ```
    [self.iCore createSend:@"12sWrxRY7E7Nhmuyjbz4TtGE9jRewGqEZD" andTokenName:@"NETX" andDestination:@"1M1LeAiECEiGb1n8pEBdoybRw6e5gQD34w" andQuantity:1 andCompletion:^(NSError *error, NSDictionary *response) {
          NSLog(@"response %@",response);
@@ -34,13 +35,16 @@ Create a send transaction
     }];
  ```
 Sign transaction with users installed IndieSquare Wallet
+
  ```  
 [self.iCore signTransactionWithWallet:@"MYURLSCHEME" andTx:unsigned_hex andCompletion:^(NSError *error, NSDictionary *response) {
            NSLog(@"sig %@",response);
            //signed transaction is returned here
     }];
    ``` 
-Broadast signed transaction
+   
+Broadcast signed transaction
+
 ```
  [self.iCore broadcast:signedTx andCompletion:^(NSError *error, NSDictionary *response) {
           NSLog(@"response: %@",response);
