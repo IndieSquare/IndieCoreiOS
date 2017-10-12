@@ -1,11 +1,11 @@
 # IndieCoreiOS
 
 # Description
-iOS SDK for IndieSquare API written in objective-c for, futher api documentation can be found [here](https://developer.indiesquare.me/)
+iOS SDK for IndieSquare API written in objective-c, futher api documentation can be found [here](https://developer.indiesquare.me/)
  
 # Installation
 
-Download the the .bundle and .a files from the releases section or download the project file and include it in your own project. Make sure to add the IndieCore.bundle to "Copy Bundle Resources" and libIndieCore.a to "Link Binary With Library" under "build phases"
+Download the .bundle and .a files from the releases section or download the xcode project file and include it in your own project. Make sure to add the IndieCore.bundle to "Copy Bundle Resources" and libIndieCore.a to "Link Binary With Library" under "build phases"
 
 See the example project below for set up and usage, (all results are logged in the console)
 [example project demo app](https://github.com/IndieSquare/IndieCoreiOSExampleApp)
