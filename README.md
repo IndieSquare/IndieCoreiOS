@@ -49,7 +49,7 @@ Broadast signed transaction
     
  ```
  
-## Request users IndieSquare wallet address and verify user owns address through message signature
+## Request user's IndieSquare wallet address and verify user owns address through message signature
 
 You must add your apps urlscheme (represented by MYURLSCHEME) in your plist, so IndieSquare and return to your app after users authorizes address usage.
 
