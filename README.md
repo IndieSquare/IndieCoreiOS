@@ -55,7 +55,7 @@ Broadcast signed transaction
  
 ## Request user's IndieSquare wallet address and verify user owns address through message signature
 
-You must add your apps urlscheme (represented by MYURLSCHEME) in your plist, so IndieSquare and return to your app after users authorizes address usage.
+You must add your apps urlscheme (represented by MYURLSCHEME) in your plist, so IndieSquare can return to your app after the user authorizes address usage.
 
 ```
  [self.iCore getAddressFromWallet:@"MYURLSCHEME" andCompletion:^(NSError *error, NSDictionary *response) {
